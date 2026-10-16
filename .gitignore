@@ -1,0 +1,16 @@
+# Office / draw.io temp
+~$*
+*.drawio.bkp
+*.drawio.dtmp
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
