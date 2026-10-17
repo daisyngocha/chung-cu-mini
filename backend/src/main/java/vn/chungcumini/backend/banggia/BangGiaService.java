@@ -64,6 +64,10 @@ public class BangGiaService {
         BangGia hienHanh = bangGiaRepository
                 .findById(maKhoanHienHanh)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khoản giá \"" + maKhoanHienHanh + "\"."));
+        if (hienHanh.getNgayHetHieuLuc() != null) {
+            throw new IllegalArgumentException(
+                    "Khoản giá \"" + maKhoanHienHanh + "\" đã hết hiệu lực, không thể đổi đơn giá trên bản ghi này.");
+        }
         if (!ngayApDung.isAfter(hienHanh.getNgayApDung())) {
             throw new IllegalArgumentException("Ngày áp dụng mới phải sau ngày áp dụng hiện hành.");
         }
