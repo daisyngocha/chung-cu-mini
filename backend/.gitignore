@@ -2,3 +2,6 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 *.iml
 .idea/
+
+# Chứa secret thật (DB password, JWT_SECRET) — không commit.
+run-local.sh

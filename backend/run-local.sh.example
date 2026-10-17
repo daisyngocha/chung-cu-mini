@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Copy file này thành "run-local.sh" (đã bị .gitignore, không commit được),
+# điền giá trị thật, rồi mỗi lần chạy backend chỉ cần: bash run-local.sh
+set -euo pipefail
+
+export DATABASE_URL='jdbc:postgresql://<host-cua-ban>.pooler.supabase.com:5432/postgres?sslmode=require'
+export DATABASE_USERNAME='postgres.<project-ref>'
+export DATABASE_PASSWORD='<mật khẩu Supabase DB>'
+export JWT_SECRET='<chuỗi random riêng, tạo bằng: openssl rand -base64 32>'
+
+mvn spring-boot:run
