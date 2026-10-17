@@ -10,6 +10,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import vn.chungcumini.backend.nguoio.NguoiOResponse;
+import vn.chungcumini.backend.nguoio.NguoiOService;
 
 @RestController
 @RequestMapping("/api/hop-dong")
@@ -17,9 +18,11 @@ import vn.chungcumini.backend.nguoio.NguoiOResponse;
 public class HopDongController {
 
     private final HopDongService hopDongService;
+    private final NguoiOService nguoiOService;
 
-    public HopDongController(HopDongService hopDongService) {
+    public HopDongController(HopDongService hopDongService, NguoiOService nguoiOService) {
         this.hopDongService = hopDongService;
+        this.nguoiOService = nguoiOService;
     }
 
     @GetMapping
@@ -51,6 +54,11 @@ public class HopDongController {
     public HopDongResponse xacNhanNhanPhong(
             @PathVariable String maHopDong, @Valid @RequestBody XacNhanNhanPhongRequest req, @AuthenticationPrincipal String maTaiKhoan) {
         return HopDongResponse.tu(hopDongService.xacNhanNhanPhong(maHopDong, req.lyDo(), req.maNguoiOCapTK(), maTaiKhoan));
+    }
+
+    @GetMapping("/{maHopDong}/nguoi-o")
+    public List<NguoiOResponse> danhSachNguoiO(@PathVariable String maHopDong) {
+        return nguoiOService.layTheoHopDong(maHopDong).stream().map(NguoiOResponse::tu).toList();
     }
 
     @PostMapping("/{maHopDong}/nguoi-o")
