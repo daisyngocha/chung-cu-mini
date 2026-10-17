@@ -173,9 +173,15 @@ public class ThongBaoTienService {
 
         nhatKyThaoTacService.ghiNhan(maTaiKhoanThucHien, "ThongBaoTien", maThongBaoTien, "PHAT_HANH", "Phát hành thông báo tiền.");
 
+        // BR-HD-03: tiền phòng của thông báo HANG_THANG luôn cho tháng kế tiếp kyThang (xem
+        // lapThongBaoHangLoat) — cảnh báo nếu HĐ hết hạn trong đúng tháng đó. Không áp dụng cho
+        // KY_HOP_DONG (tiền phòng của nó là phần còn lại của tháng ký, không phải tháng sau).
+        if (tb.getLoaiThongBao() != LoaiThongBao.HANG_THANG) {
+            return false;
+        }
         LocalDate hetHan = tb.getHopDong().getNgayHetHan();
-        LocalDate thangKeTiep = LocalDate.now().plusMonths(1);
-        return !hetHan.isAfter(thangKeTiep.withDayOfMonth(thangKeTiep.lengthOfMonth()));
+        java.time.YearMonth thangKeTiep = java.time.YearMonth.parse(tb.getKyThang()).plusMonths(1);
+        return !hetHan.isAfter(thangKeTiep.atEndOfMonth()) && !hetHan.isBefore(thangKeTiep.atDay(1));
     }
 
     /** ThongBaoTien.huy: NHAP thì xóa thẳng, không qua DA_HUY; đã phát hành thì chỉ hủy khi chưa thu (BR-HD-04). */
