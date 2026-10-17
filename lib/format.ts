@@ -7,3 +7,20 @@ export const TEN_TRANG_THAI_PHONG: Record<string, string> = {
   DANG_THUE: "Đang thuê",
   NGUNG_KHAI_THAC: "Ngừng khai thác",
 };
+
+export const TEN_TRANG_THAI_HOP_DONG: Record<string, string> = {
+  CHO_NHAN_PHONG: "Chờ nhận phòng",
+  HIEU_LUC: "Hiệu lực",
+  DA_THANH_LY: "Đã thanh lý",
+};
+
+export const TEN_LOAI_KET_THUC: Record<string, string> = {
+  KHACH_BAO_TRA: "Khách báo trả",
+  HET_HAN: "Hết hạn hợp đồng",
+  CHAM_DUT_VI_PHAM: "Chấm dứt do vi phạm",
+};
+
+export function formatNgay(ngay: string | null | undefined) {
+  if (!ngay) return "—";
+  return new Intl.DateTimeFormat("vi-VN").format(new Date(ngay));
+}
