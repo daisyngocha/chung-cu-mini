@@ -5,16 +5,22 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import vn.chungcumini.backend.domain.LoaiThongBao;
 import vn.chungcumini.backend.domain.ThongBaoTien;
 import vn.chungcumini.backend.domain.TrangThaiTBT;
 
 public interface ThongBaoTienRepository extends JpaRepository<ThongBaoTien, String> {
 
-    @Query("SELECT t FROM ThongBaoTien t JOIN FETCH t.hopDong h JOIN FETCH h.phong WHERE t.maThongBaoTien = :maThongBaoTien")
+    @Query("SELECT t FROM ThongBaoTien t JOIN FETCH t.hopDong h JOIN FETCH h.phong JOIN FETCH h.khachThue WHERE t.maThongBaoTien = :maThongBaoTien")
     Optional<ThongBaoTien> timChiTiet(@Param("maThongBaoTien") String maThongBaoTien);
 
     @Query("SELECT t FROM ThongBaoTien t JOIN FETCH t.hopDong h JOIN FETCH h.phong WHERE t.kyThang = :kyThang ORDER BY h.phong.maPhong")
     List<ThongBaoTien> timTheoKyThang(@Param("kyThang") String kyThang);
+
+    @Query(
+            "SELECT t FROM ThongBaoTien t JOIN FETCH t.hopDong h JOIN FETCH h.phong WHERE h.maTaiKhoan = :maTaiKhoan "
+                    + "ORDER BY t.kyThang DESC")
+    List<ThongBaoTien> timTheoTaiKhoanKhach(@Param("maTaiKhoan") String maTaiKhoan);
 
     List<ThongBaoTien> findByHopDong_MaHopDongAndTrangThaiNot(String maHopDong, TrangThaiTBT trangThai);
 
@@ -35,4 +41,21 @@ public interface ThongBaoTienRepository extends JpaRepository<ThongBaoTien, Stri
             "SELECT t FROM ThongBaoTien t JOIN FETCH t.hopDong h JOIN FETCH h.phong WHERE t.trangThai NOT IN ('NHAP', 'DA_HUY') "
                     + "AND t.ngayPhatHanh BETWEEN :tuNgay AND :denNgay")
     List<ThongBaoTien> timDaPhatHanhTrongKhoang(@Param("tuNgay") java.time.LocalDate tuNgay, @Param("denNgay") java.time.LocalDate denNgay);
+
+    /** SuCo.tinhPhiChoKhach: gắn phí phát sinh vào thông báo NHAP của kỳ hiện tại, tạo chờ nếu chưa lập. */
+    Optional<ThongBaoTien> findByHopDong_MaHopDongAndKyThangAndTrangThai(
+            String maHopDong, String kyThang, TrangThaiTBT trangThai);
+
+    /** QuyetToan.tinhQuyetToan: dòng NO_CHUA_TRA = tổng còn thiếu của các thông báo đã phát hành chưa thu đủ. */
+    @Query(
+            "SELECT COALESCE(SUM(t.tongTien - t.soDaThu), 0) FROM ThongBaoTien t WHERE t.hopDong.maHopDong = :maHopDong "
+                    + "AND t.trangThai IN ('DA_PHAT_HANH', 'DA_THU_MOT_PHAN', 'QUA_HAN', 'CHO_XAC_NHAN')")
+    java.math.BigDecimal tongNoChuaTra(@Param("maHopDong") String maHopDong);
+
+    /** QuyetToan.tinhQuyetToan: kỳ HANG_THANG đã lập gần nhất — mốc tính phần điện/nước/dịch vụ chưa lập hóa đơn. */
+    Optional<ThongBaoTien> findFirstByHopDong_MaHopDongAndLoaiThongBaoAndTrangThaiNotOrderByKyThangDesc(
+            String maHopDong, LoaiThongBao loaiThongBao, TrangThaiTBT trangThai);
+
+    /** HopDong.xacNhanNhanPhong (BR-CT-05): mỗi HĐ có đúng 1 thông báo KY_HOP_DONG (lapThongBaoKyHopDong). */
+    Optional<ThongBaoTien> findByHopDong_MaHopDongAndLoaiThongBao(String maHopDong, LoaiThongBao loaiThongBao);
 }
