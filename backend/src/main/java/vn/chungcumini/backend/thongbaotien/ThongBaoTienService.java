@@ -82,6 +82,11 @@ public class ThongBaoTienService {
                 .orElse(false);
     }
 
+    /** Màn hình Nhận phòng (CN-03.03): tìm thông báo ký HĐ của một hợp đồng, nếu đã lập. */
+    public java.util.Optional<ThongBaoTien> timThongBaoKyHopDong(String maHopDong) {
+        return thongBaoTienRepository.findByHopDong_MaHopDongAndLoaiThongBao(maHopDong, LoaiThongBao.KY_HOP_DONG);
+    }
+
     /** Tạo bản ghi NHAP — CRUD cơ bản dùng chung cho lapThongBaoKyHopDong (HopDong) và lapThongBaoHangLoat. */
     @Transactional
     public ThongBaoTien taoNhap(HopDong hopDong, LoaiThongBao loaiThongBao, String kyThang, LocalDate hanThanhToan, BigDecimal noCu) {

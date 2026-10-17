@@ -33,6 +33,16 @@ public class ThongBaoTienController {
         return ThongBaoTienResponse.tu(tb, dong);
     }
 
+    /** Màn hình Nhận phòng (CN-03.03): thông báo ký HĐ của một hợp đồng, null nếu chưa lập. */
+    @GetMapping("/hop-dong/{maHopDong}/ky-hop-dong")
+    public ThongBaoTienResponse kyHopDong(@PathVariable String maHopDong) {
+        return thongBaoTienService.timThongBaoKyHopDong(maHopDong)
+                .map(tb -> ThongBaoTienResponse.tu(
+                        tb, thongBaoTienService.layDongTheoThongBao(tb.getMaThongBaoTien()).stream()
+                                .map(DongThongBaoTienResponse::tu).toList()))
+                .orElse(null);
+    }
+
     @PostMapping("/{maThongBaoTien}/dong")
     public DongThongBaoTienResponse themDong(@PathVariable String maThongBaoTien, @Valid @RequestBody ThemDongRequest req) {
         return DongThongBaoTienResponse.tu(thongBaoTienService.themDong(

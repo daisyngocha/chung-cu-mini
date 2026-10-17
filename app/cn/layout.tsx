@@ -9,7 +9,10 @@ const NAV = [
   { href: "/cn/bang-gia/phi-dich-vu", label: "Phí dịch vụ cố định" },
   { href: "/cn/khach-thue", label: "Khách thuê" },
   { href: "/cn/hop-dong", label: "Hợp đồng" },
+  { href: "/cn/nhan-phong", label: "Nhận phòng" },
   { href: "/cn/tam-tru", label: "Danh sách tạm trú" },
+  { href: "/cn/chi-so", label: "Ghi chỉ số" },
+  { href: "/cn/thong-bao-tien", label: "Thông báo tiền" },
 ];
 
 export default async function ChuNhaLayout({
