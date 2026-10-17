@@ -11,18 +11,17 @@ import vn.chungcumini.backend.domain.LoaiCongTo;
 import vn.chungcumini.backend.domain.LoaiGhi;
 import vn.chungcumini.backend.domain.ThongBaoTien;
 import vn.chungcumini.backend.domain.TrangThaiHD;
+import vn.chungcumini.backend.domain.TrangThaiSuCo;
 import vn.chungcumini.backend.domain.TrangThaiTBT;
 import vn.chungcumini.backend.repository.BanGiaoTaiSanRepository;
+import vn.chungcumini.backend.repository.BaoThanhToanRepository;
 import vn.chungcumini.backend.repository.ChiSoRepository;
 import vn.chungcumini.backend.repository.HopDongRepository;
+import vn.chungcumini.backend.repository.SuCoRepository;
 import vn.chungcumini.backend.repository.ThongBaoTienRepository;
 import vn.chungcumini.backend.repository.ToaNhaRepository;
 
-/**
- * DichVuViecCanLam — màn hình chính của chủ nhà (CN-01.01, UC08.04). Thiếu 2 mục so với đặc tả vì
- * module chưa gộp vào nhánh này: "báo chuyển khoản chờ xác nhận" (BaoThanhToan — GĐ4) và "sự cố
- * MOI/MO_LAI" (SuCo — GĐ6), cả hai đang ở nhánh riêng (PR #7, #9) — bổ sung khi gộp vào main.
- */
+/** DichVuViecCanLam — màn hình chính của chủ nhà (CN-01.01, UC08.04). */
 @Service
 public class DichVuViecCanLamService {
 
@@ -31,23 +30,44 @@ public class DichVuViecCanLamService {
     private final BanGiaoTaiSanRepository banGiaoTaiSanRepository;
     private final ChiSoRepository chiSoRepository;
     private final ToaNhaRepository toaNhaRepository;
+    private final BaoThanhToanRepository baoThanhToanRepository;
+    private final SuCoRepository suCoRepository;
 
     public DichVuViecCanLamService(
             ThongBaoTienRepository thongBaoTienRepository,
             HopDongRepository hopDongRepository,
             BanGiaoTaiSanRepository banGiaoTaiSanRepository,
             ChiSoRepository chiSoRepository,
-            ToaNhaRepository toaNhaRepository) {
+            ToaNhaRepository toaNhaRepository,
+            BaoThanhToanRepository baoThanhToanRepository,
+            SuCoRepository suCoRepository) {
         this.thongBaoTienRepository = thongBaoTienRepository;
         this.hopDongRepository = hopDongRepository;
         this.banGiaoTaiSanRepository = banGiaoTaiSanRepository;
         this.chiSoRepository = chiSoRepository;
         this.toaNhaRepository = toaNhaRepository;
+        this.baoThanhToanRepository = baoThanhToanRepository;
+        this.suCoRepository = suCoRepository;
     }
 
     public List<ViecCanLam> layDanhSach() {
         List<ViecCanLam> ketQua = new ArrayList<>();
         LocalDate homNay = LocalDate.now();
+
+        for (var baoTT : baoThanhToanRepository.timHangChoXacNhan()) {
+            ketQua.add(new ViecCanLam(
+                    LoaiViecCanLam.BAO_CK_CHO_XAC_NHAN,
+                    "Phòng " + baoTT.getThongBaoTien().getHopDong().getPhong().getMaPhong()
+                            + " báo đã chuyển khoản, chờ xác nhận.",
+                    "BaoThanhToan:" + baoTT.getMaBaoTT()));
+        }
+
+        for (var suCo : suCoRepository.findByTrangThaiIn(List.of(TrangThaiSuCo.MOI, TrangThaiSuCo.MO_LAI))) {
+            ketQua.add(new ViecCanLam(
+                    LoaiViecCanLam.SU_CO_MOI_MO_LAI,
+                    "Phòng " + suCo.getPhong().getMaPhong() + " có sự cố " + suCo.getLoaiSuCo() + " chưa xử lý.",
+                    "SuCo:" + suCo.getMaSuCo()));
+        }
 
         for (ThongBaoTien tb : thongBaoTienRepository.findByTrangThaiIn(List.of(TrangThaiTBT.QUA_HAN))) {
             ketQua.add(new ViecCanLam(

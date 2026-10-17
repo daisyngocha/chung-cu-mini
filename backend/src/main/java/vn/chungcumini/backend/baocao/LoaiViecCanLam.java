@@ -1,9 +1,6 @@
 package vn.chungcumini.backend.baocao;
 
-/**
- * Không phải enum DB (DichVuViecCanLam không lưu CSDL). BAO_CK_CHO_XAC_NHAN (module BaoThanhToan)
- * và SU_CO_MOI_MO_LAI (module SuCo) chưa gộp vào nhánh này — xem ghi chú ở DichVuViecCanLamService.
- */
+/** Không phải enum DB — DichVuViecCanLam không lưu CSDL, chỉ tổng hợp từ các module khác tại thời điểm gọi. */
 public enum LoaiViecCanLam {
     BAO_CK_CHO_XAC_NHAN,
     THONG_BAO_QUA_HAN,

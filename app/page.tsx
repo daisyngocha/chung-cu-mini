@@ -6,6 +6,6 @@ export default async function Home() {
 
   if (!session) redirect("/dang-nhap");
   if (session.phaiDoiMatKhau) redirect("/doi-mat-khau");
-  if (session.vaiTro === "CHU_NHA") redirect("/cn/phong");
+  if (session.vaiTro === "CHU_NHA") redirect("/cn/viec-can-lam");
   redirect("/kt/trang-chu");
 }

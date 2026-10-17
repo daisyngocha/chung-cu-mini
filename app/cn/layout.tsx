@@ -4,6 +4,8 @@ import { goiBackend } from "@/lib/backend";
 import { dangXuat } from "@/app/dang-xuat/actions";
 
 const NAV = [
+  { href: "/cn/viec-can-lam", label: "Việc cần làm" },
+  { href: "/cn/so-do-toa", label: "Sơ đồ tòa" },
   { href: "/cn/phong", label: "Phòng & bảng giá" },
   { href: "/cn/bang-gia/dien-nuoc", label: "Đơn giá điện, nước" },
   { href: "/cn/bang-gia/phi-dich-vu", label: "Phí dịch vụ cố định" },
@@ -28,9 +30,10 @@ export default async function ChuNhaLayout({
 }) {
   await requireSession("CHU_NHA");
   const token = await getSessionToken();
-  const [toaNha, demChuaDoc] = await Promise.all([
+  const [toaNha, demChuaDoc, dsViecCanLam] = await Promise.all([
     goiBackend<{ tenToa: string }>("/api/toa-nha/mac-dinh", { token }),
     goiBackend<{ soLuong: number }>("/api/thong-bao/chua-doc", { token }),
+    goiBackend<unknown[]>("/api/viec-can-lam", { token }),
   ]);
 
   return (
@@ -54,6 +57,11 @@ export default async function ChuNhaLayout({
               {item.href === "/cn/thong-bao" && demChuaDoc.soLuong > 0 && (
                 <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-semibold text-white">
                   {demChuaDoc.soLuong}
+                </span>
+              )}
+              {item.href === "/cn/viec-can-lam" && dsViecCanLam.length > 0 && (
+                <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-semibold text-white">
+                  {dsViecCanLam.length}
                 </span>
               )}
             </Link>
