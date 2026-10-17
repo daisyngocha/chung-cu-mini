@@ -8,6 +8,7 @@ import {
   baoTraPhong,
   xacNhanThuHoiChiaKhoa,
   nguoiORoiDi,
+  thanhLy,
   type HopDongDetailFormState,
 } from "./actions";
 
@@ -158,6 +159,24 @@ export function ThuHoiChiaKhoaButton({ maHopDong }: { maHopDong: string }) {
         Xác nhận đã thu hồi chìa khóa
       </button>
     </form>
+  );
+}
+
+export function ThanhLyForm({ maHopDong }: { maHopDong: string }) {
+  const [state, formAction, isPending] = useActionState(thanhLy.bind(null, maHopDong), initialState);
+  return (
+    <Card title="Thanh lý hợp đồng">
+      <form action={formAction} className="flex flex-col items-start gap-3">
+        <label className="flex items-center gap-2 text-sm text-zinc-700">
+          <input type="checkbox" name="boQuaCanhBaoChuaThuHoiChiaKhoa" className="h-4 w-4" />
+          Bỏ qua cảnh báo chưa thu hồi chìa khóa
+        </label>
+        <button type="submit" disabled={isPending} className={btnCls}>
+          {isPending ? "Đang thanh lý..." : "Thanh lý hợp đồng"}
+        </button>
+      </form>
+      {state.error && <p className={errCls}>{state.error}</p>}
+    </Card>
   );
 }
 

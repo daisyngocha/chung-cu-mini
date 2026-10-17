@@ -87,6 +87,11 @@ public class ThongBaoTienService {
         return thongBaoTienRepository.findByHopDong_MaHopDongAndLoaiThongBao(maHopDong, LoaiThongBao.KY_HOP_DONG);
     }
 
+    /** Màn hình Quyết toán (CN-04.02): tìm thông báo thu thêm đã lập cho một quyết toán, nếu có. */
+    public java.util.Optional<ThongBaoTien> timThongBaoThuThem(String maQuyetToan) {
+        return thongBaoTienRepository.findByMaQuyetToan(maQuyetToan);
+    }
+
     /** Tạo bản ghi NHAP — CRUD cơ bản dùng chung cho lapThongBaoKyHopDong (HopDong) và lapThongBaoHangLoat. */
     @Transactional
     public ThongBaoTien taoNhap(HopDong hopDong, LoaiThongBao loaiThongBao, String kyThang, LocalDate hanThanhToan, BigDecimal noCu) {

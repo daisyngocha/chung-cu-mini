@@ -188,3 +188,27 @@ export async function xacNhanThuHoiChiaKhoa(maHopDong: string) {
   await goiBackend(`/api/hop-dong/${maHopDong}/thu-hoi-chia-khoa`, { method: "PATCH", token });
   revalidatePath(`/cn/hop-dong/${maHopDong}`);
 }
+
+export async function thanhLy(
+  maHopDong: string,
+  _prevState: HopDongDetailFormState,
+  formData: FormData,
+): Promise<HopDongDetailFormState> {
+  await requireSession("CHU_NHA");
+  const token = await getSessionToken();
+  const boQuaCanhBao = formData.get("boQuaCanhBaoChuaThuHoiChiaKhoa") === "on";
+
+  try {
+    await goiBackend(`/api/hop-dong/${maHopDong}/thanh-ly`, {
+      method: "PATCH",
+      token,
+      body: { boQuaCanhBaoChuaThuHoiChiaKhoa: boQuaCanhBao },
+    });
+  } catch (e) {
+    return layLoi(e, "Không thanh lý được hợp đồng. Vui lòng thử lại.");
+  }
+
+  revalidatePath(`/cn/hop-dong/${maHopDong}`);
+  revalidatePath("/cn/hop-dong");
+  return {};
+}

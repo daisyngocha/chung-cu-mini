@@ -10,6 +10,7 @@ const NAV = [
   { href: "/cn/khach-thue", label: "Khách thuê" },
   { href: "/cn/hop-dong", label: "Hợp đồng" },
   { href: "/cn/nhan-phong", label: "Nhận phòng" },
+  { href: "/cn/tra-phong", label: "Trả phòng" },
   { href: "/cn/tam-tru", label: "Danh sách tạm trú" },
   { href: "/cn/chi-so", label: "Ghi chỉ số" },
   { href: "/cn/thong-bao-tien", label: "Thông báo tiền" },
