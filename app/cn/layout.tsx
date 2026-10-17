@@ -5,6 +5,8 @@ import { dangXuat } from "@/app/dang-xuat/actions";
 
 const NAV = [
   { href: "/cn/phong", label: "Phòng & bảng giá" },
+  { href: "/cn/bang-gia/dien-nuoc", label: "Đơn giá điện, nước" },
+  { href: "/cn/bang-gia/phi-dich-vu", label: "Phí dịch vụ cố định" },
   { href: "/cn/khach-thue", label: "Khách thuê" },
   { href: "/cn/hop-dong", label: "Hợp đồng" },
   { href: "/cn/tam-tru", label: "Danh sách tạm trú" },
