@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import vn.chungcumini.backend.phieuthu.PhieuThuResponse;
 
 @RestController
 @RequestMapping("/api/thong-bao-tien")
@@ -50,6 +51,14 @@ public class ThongBaoTienController {
     @PatchMapping("/{maThongBaoTien}/huy")
     public void huy(@PathVariable String maThongBaoTien, @RequestBody HuyThongBaoRequest req, @AuthenticationPrincipal String maTaiKhoan) {
         thongBaoTienService.huy(maThongBaoTien, req.lyDo(), maTaiKhoan);
+    }
+
+    /** ThongBaoTien.ghiNhanThu: chủ nhà ghi nhận thu trực tiếp (tiền mặt hoặc CK ngoài hệ thống). */
+    @PatchMapping("/{maThongBaoTien}/ghi-nhan-thu")
+    public PhieuThuResponse ghiNhanThu(
+            @PathVariable String maThongBaoTien, @Valid @RequestBody GhiNhanThuRequest req, @AuthenticationPrincipal String maTaiKhoan) {
+        return PhieuThuResponse.tu(thongBaoTienService.ghiNhanThu(
+                maThongBaoTien, req.soTien(), req.hinhThuc(), req.nguoiNop(), req.ngayThu(), maTaiKhoan));
     }
 
     @GetMapping("/{maThongBaoTien}/viet-qr")

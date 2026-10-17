@@ -32,9 +32,7 @@ import vn.chungcumini.backend.taikhoan.TaoTaiKhoanKhachResult;
 import vn.chungcumini.backend.thongbaotien.ThongBaoTienService;
 
 /**
- * thanhLy() và phần kiểm tra "đã thu đủ tiền ký HĐ" của xacNhanNhanPhong() CHƯA cài — cần module
- * QuyetToan (GĐ5) và PhieuThu (GĐ4, để soDaThu của ThongBaoTien lên được DA_THU_DU). xacNhanNhanPhong()
- * ở đây luôn bắt buộc lyDo thay vì tự kiểm tra trạng thái thu tiền, cho tới khi PhieuThu tồn tại.
+ * thanhLy() CHƯA cài — cần module QuyetToan (GĐ5).
  */
 @Service
 public class HopDongService {
@@ -296,11 +294,10 @@ public class HopDongService {
     }
 
     /**
-     * HopDong.xacNhanNhanPhong (BR-CT-05, BR-DM-04). Vẫn bỏ qua 2 kiểm tra của tiền điều kiện:
-     * "có ChiSo đầu kỳ" (ChiSo đã có từ GĐ3 nhưng chữ ký phương thức này chưa nhận tham số chỉ số —
-     * để không đổi lại hợp đồng giao diện nhận phòng đã chốt ở GĐ2 trong lúc chỉ làm GĐ3) và "đã thu
-     * đủ tiền ký HĐ" (ThongBaoTien.soDaThu luôn 0 vì PhieuThu — GĐ4 — chưa cài, nên không thể lên
-     * DA_THU_DU). lyDo luôn bắt buộc để thay thế 2 kiểm tra đó.
+     * HopDong.xacNhanNhanPhong (BR-CT-05, BR-DM-04). Vẫn bỏ qua kiểm tra tiền điều kiện "có ChiSo đầu
+     * kỳ" (ChiSo đã có từ GĐ3 nhưng chữ ký phương thức này chưa nhận tham số chỉ số — để không đổi lại
+     * hợp đồng giao diện nhận phòng đã chốt ở GĐ2). BR-CT-05: chặn khi thông báo ký HĐ chưa thu đủ,
+     * trừ khi chủ nhà ghi lyDo.
      */
     @Transactional
     public HopDong xacNhanNhanPhong(String maHopDong, String lyDo, String maNguoiOCapTK, String maTaiKhoanThucHien) {
@@ -308,9 +305,10 @@ public class HopDongService {
         if (hopDong.getTrangThai() != TrangThaiHD.CHO_NHAN_PHONG) {
             throw new IllegalArgumentException("Hợp đồng không ở trạng thái chờ nhận phòng.");
         }
-        if (lyDo == null || lyDo.isBlank()) {
+        boolean daThuDu = thongBaoTienService.kyHopDongDaThuDu(maHopDong);
+        if (!daThuDu && (lyDo == null || lyDo.isBlank())) {
             throw new IllegalArgumentException(
-                    "Bắt buộc ghi lý do khi xác nhận nhận phòng (chưa có module Phiếu thu để tự kiểm tra đã thu đủ).");
+                    "Thông báo tiền ký hợp đồng chưa thu đủ — bắt buộc ghi lý do để xác nhận nhận phòng (BR-CT-05).");
         }
 
         NguoiO nguoiOCapTK = null;
@@ -410,6 +408,12 @@ public class HopDongService {
 
     public List<HopDong> layDanhSach() {
         return hopDongRepository.findAllChiTiet();
+    }
+
+    /** HĐ hiệu lực của tài khoản khách đang đăng nhập (Mục 11: khách chỉ thao tác trên phòng mình). */
+    public HopDong layHopDongHieuLucCuaTaiKhoan(String maTaiKhoan) {
+        return hopDongRepository.findHieuLucByMaTaiKhoan(maTaiKhoan)
+                .orElseThrow(() -> new IllegalArgumentException("Tài khoản không có hợp đồng đang hiệu lực."));
     }
 
     /**
