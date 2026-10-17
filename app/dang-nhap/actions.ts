@@ -36,5 +36,5 @@ export async function dangNhap(
   await setSessionToken(res.token);
 
   if (res.phaiDoiMatKhau) redirect("/doi-mat-khau");
-  redirect(res.vaiTro === "CHU_NHA" ? "/cn/phong" : "/kt/trang-chu");
+  redirect(res.vaiTro === "CHU_NHA" ? "/cn/viec-can-lam" : "/kt/trang-chu");
 }
