@@ -16,6 +16,7 @@ const NAV = [
   { href: "/cn/thong-bao-tien", label: "Thông báo tiền" },
   { href: "/cn/xac-nhan-thanh-toan", label: "Xác nhận thanh toán" },
   { href: "/cn/phieu-thu", label: "Phiếu thu" },
+  { href: "/cn/su-co", label: "Sự cố" },
 ];
 
 export default async function ChuNhaLayout({
