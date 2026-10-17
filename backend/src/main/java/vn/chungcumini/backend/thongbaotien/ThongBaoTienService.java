@@ -13,23 +13,24 @@ import vn.chungcumini.backend.domain.LoaiKhoanTBT;
 import vn.chungcumini.backend.domain.LoaiThongBao;
 import vn.chungcumini.backend.domain.ThongBaoTien;
 import vn.chungcumini.backend.domain.TrangThaiTBT;
+import vn.chungcumini.backend.domain.HinhThucTT;
+import vn.chungcumini.backend.domain.PhieuThu;
 import vn.chungcumini.backend.nhatky.NhatKyThaoTacService;
+import vn.chungcumini.backend.phieuthu.PhieuThuIdGenerator;
 import vn.chungcumini.backend.repository.ChiSoRepository;
 import vn.chungcumini.backend.repository.DongThongBaoTienRepository;
+import vn.chungcumini.backend.repository.PhieuThuRepository;
 import vn.chungcumini.backend.repository.ThongBaoTienRepository;
 import vn.chungcumini.backend.toanha.ToaNhaService;
 
-/**
- * ThongBaoTien.ghiNhanThu/capNhatTrangThaiThu CHƯA cài — cần module PhieuThu (GĐ4); soDaThu luôn 0
- * cho tới khi đó, nên trangThai không bao giờ tự lên DA_THU_MOT_PHAN/DA_THU_DU qua đường đó. Gửi
- * ThongBao (TB_TIEN_MOI, KHACH_BAO_TRA...) cũng chưa cài — module Thông báo chưa được xây.
- */
+/** Gửi ThongBao (TB_TIEN_MOI, KHACH_BAO_TRA...) chưa cài — module Thông báo chưa được xây. */
 @Service
 public class ThongBaoTienService {
 
     private final ThongBaoTienRepository thongBaoTienRepository;
     private final DongThongBaoTienRepository dongThongBaoTienRepository;
     private final ChiSoRepository chiSoRepository;
+    private final PhieuThuRepository phieuThuRepository;
     private final ToaNhaService toaNhaService;
     private final NhatKyThaoTacService nhatKyThaoTacService;
 
@@ -37,11 +38,13 @@ public class ThongBaoTienService {
             ThongBaoTienRepository thongBaoTienRepository,
             DongThongBaoTienRepository dongThongBaoTienRepository,
             ChiSoRepository chiSoRepository,
+            PhieuThuRepository phieuThuRepository,
             ToaNhaService toaNhaService,
             NhatKyThaoTacService nhatKyThaoTacService) {
         this.thongBaoTienRepository = thongBaoTienRepository;
         this.dongThongBaoTienRepository = dongThongBaoTienRepository;
         this.chiSoRepository = chiSoRepository;
+        this.phieuThuRepository = phieuThuRepository;
         this.toaNhaService = toaNhaService;
         this.nhatKyThaoTacService = nhatKyThaoTacService;
     }
@@ -53,6 +56,18 @@ public class ThongBaoTienService {
 
     public List<DongThongBaoTien> layDongTheoThongBao(String maThongBaoTien) {
         return dongThongBaoTienRepository.findByThongBaoTien_MaThongBaoTien(maThongBaoTien);
+    }
+
+    /** Mục 11: danh sách thông báo tiền của khách đang đăng nhập — lọc theo phòng đang thuê. */
+    public List<ThongBaoTien> layTheoTaiKhoanKhach(String maTaiKhoan) {
+        return thongBaoTienRepository.timTheoTaiKhoanKhach(maTaiKhoan);
+    }
+
+    /** BR-CT-05: HopDong.xacNhanNhanPhong chỉ bỏ qua yêu cầu lyDo khi thông báo ký HĐ đã thu đủ. */
+    public boolean kyHopDongDaThuDu(String maHopDong) {
+        return thongBaoTienRepository.findByHopDong_MaHopDongAndLoaiThongBao(maHopDong, LoaiThongBao.KY_HOP_DONG)
+                .map(tb -> tb.getTrangThai() == TrangThaiTBT.DA_THU_DU)
+                .orElse(false);
     }
 
     /** Tạo bản ghi NHAP — CRUD cơ bản dùng chung cho lapThongBaoKyHopDong (HopDong) và lapThongBaoHangLoat. */
@@ -232,5 +247,64 @@ public class ThongBaoTienService {
         }
         tb.setTrangThai(TrangThaiTBT.QUA_HAN);
         thongBaoTienRepository.save(tb);
+    }
+
+    /**
+     * ThongBaoTien.capNhatTrangThaiThu: soDaThu = Σ PhieuThu HIEU_LUC. 0 → DA_PHAT_HANH (QUA_HAN nếu
+     * quá hạn); 0 &lt; soDaThu &lt; tongTien → DA_THU_MOT_PHAN; soDaThu ≥ tongTien → DA_THU_DU.
+     * Cũng chính là cách tái tạo "trạng thái trước khi báo" cho BaoThanhToan.tuChoi() mà không cần
+     * một cột lưu riêng (sheet 2_ThuocTinh không có cột đó).
+     */
+    @Transactional
+    public void capNhatTrangThaiThu(String maThongBaoTien) {
+        ThongBaoTien tb = timHoacNem(maThongBaoTien);
+        BigDecimal soDaThu = phieuThuRepository.tongDaThuHieuLuc(maThongBaoTien);
+        tb.setSoDaThu(soDaThu);
+
+        if (soDaThu.compareTo(tb.getTongTien()) >= 0) {
+            tb.setTrangThai(TrangThaiTBT.DA_THU_DU);
+        } else if (soDaThu.signum() > 0) {
+            tb.setTrangThai(TrangThaiTBT.DA_THU_MOT_PHAN);
+        } else {
+            tb.setTrangThai(LocalDate.now().isAfter(tb.getHanThanhToan()) ? TrangThaiTBT.QUA_HAN : TrangThaiTBT.DA_PHAT_HANH);
+        }
+        thongBaoTienRepository.save(tb);
+    }
+
+    /**
+     * ThongBaoTien.ghiNhanThu: chủ nhà ghi nhận thu trực tiếp (tiền mặt, hoặc chuyển khoản khách
+     * không báo qua hệ thống). maBaoTT luôn NULL (BR-TT-02, BR-TT-03).
+     */
+    @Transactional
+    public PhieuThu ghiNhanThu(
+            String maThongBaoTien, BigDecimal soTien, HinhThucTT hinhThuc, String nguoiNop, LocalDate ngayThu, String maTaiKhoanThucHien) {
+        ThongBaoTien tb = timHoacNem(maThongBaoTien);
+        if (soTien == null || soTien.signum() <= 0) {
+            throw new IllegalArgumentException("Số tiền phải lớn hơn 0.");
+        }
+        if (tb.getTrangThai() != TrangThaiTBT.DA_PHAT_HANH
+                && tb.getTrangThai() != TrangThaiTBT.DA_THU_MOT_PHAN
+                && tb.getTrangThai() != TrangThaiTBT.QUA_HAN) {
+            throw new IllegalArgumentException(
+                    "Chỉ ghi nhận thu cho thông báo chưa thu đủ (đang chờ xác nhận báo chuyển khoản thì xử lý báo đó trước).");
+        }
+
+        PhieuThu phieuThu = new PhieuThu();
+        LocalDate ngay = ngayThu != null ? ngayThu : LocalDate.now();
+        phieuThu.setSoPhieuThu(PhieuThuIdGenerator.sinh(phieuThuRepository, ngay));
+        phieuThu.setThongBaoTien(tb);
+        phieuThu.setBaoThanhToan(null);
+        phieuThu.setNgayThu(ngay);
+        phieuThu.setNguoiNop(nguoiNop != null ? nguoiNop : tb.getHopDong().getKhachThue().getHoTen());
+        phieuThu.setSoTien(soTien);
+        phieuThu.setHinhThuc(hinhThuc);
+        phieuThu = phieuThuRepository.save(phieuThu);
+
+        capNhatTrangThaiThu(maThongBaoTien);
+
+        nhatKyThaoTacService.ghiNhan(
+                maTaiKhoanThucHien, "PhieuThu", phieuThu.getSoPhieuThu(), "TAO",
+                "Ghi nhận thu trực tiếp " + soTien + " (" + hinhThuc + ") cho thông báo \"" + maThongBaoTien + "\".");
+        return phieuThu;
     }
 }
