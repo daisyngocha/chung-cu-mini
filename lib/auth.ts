@@ -16,7 +16,14 @@ export async function getSession(): Promise<SessionPayload | null> {
 }
 
 export async function setSessionCookie(payload: SessionPayload) {
-  const token = await createSessionToken(payload);
+  await setSessionToken(await createSessionToken(payload));
+}
+
+/**
+ * Lưu trực tiếp JWT do backend Java trả về (cùng SESSION_SECRET/JWT_SECRET
+ * nên proxy.ts vẫn verify được bình thường) — dùng khi đăng nhập qua API.
+ */
+export async function setSessionToken(token: string) {
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -24,6 +31,10 @@ export async function setSessionCookie(payload: SessionPayload) {
     path: "/",
     maxAge: SESSION_DURATION_SECONDS,
   });
+}
+
+export async function getSessionToken(): Promise<string | null> {
+  return (await cookies()).get(SESSION_COOKIE)?.value ?? null;
 }
 
 export async function clearSessionCookie() {

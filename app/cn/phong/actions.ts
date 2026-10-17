@@ -1,9 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/auth";
+import { getSessionToken, requireSession } from "@/lib/auth";
+import { goiBackend, BackendError } from "@/lib/backend";
 
 export type PhongFormState = { error?: string };
 
@@ -12,6 +11,7 @@ export async function taoPhong(
   formData: FormData,
 ): Promise<PhongFormState> {
   await requireSession("CHU_NHA");
+  const token = await getSessionToken();
 
   const maPhong = String(formData.get("maPhong") ?? "").trim();
   const tang = Number(formData.get("tang"));
@@ -28,21 +28,22 @@ export async function taoPhong(
   }
 
   try {
-    await prisma.phong.create({
-      data: {
+    await goiBackend("/api/phong", {
+      method: "POST",
+      token,
+      body: {
         maPhong,
         tang,
-        dienTich: new Prisma.Decimal(dienTich),
+        dienTich: Number(dienTich),
         soNguoiToiDa,
-        giaNiemYet: new Prisma.Decimal(giaNiemYet),
+        giaNiemYet: Number(giaNiemYet),
         coCongToNuoc,
       },
     });
   } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-      return { error: `Mã phòng "${maPhong}" đã tồn tại.` };
-    }
-    return { error: "Không thêm được phòng. Vui lòng thử lại." };
+    return {
+      error: e instanceof BackendError ? e.message : "Không thêm được phòng. Vui lòng thử lại.",
+    };
   }
 
   revalidatePath("/cn/phong");
@@ -51,33 +52,11 @@ export async function taoPhong(
 
 export async function chuyenTrangThaiPhong(maPhong: string) {
   await requireSession("CHU_NHA");
+  const token = await getSessionToken();
 
-  const phong = await prisma.phong.findUnique({ where: { maPhong } });
-  if (!phong) return;
-
-  // BR-DM-04: chủ nhà chỉ chuyển Trống <-> Ngừng khai thác.
-  if (phong.trangThai === "TRONG") {
-    await prisma.phong.update({
-      where: { maPhong },
-      data: { trangThai: "NGUNG_KHAI_THAC" },
-    });
-  } else if (phong.trangThai === "NGUNG_KHAI_THAC") {
-    await prisma.phong.update({
-      where: { maPhong },
-      data: { trangThai: "TRONG" },
-    });
-  }
-
+  await goiBackend(`/api/phong/${maPhong}/trang-thai`, { method: "PATCH", token });
   revalidatePath("/cn/phong");
 }
 
-export async function xoaPhong(maPhong: string) {
-  await requireSession("CHU_NHA");
-
-  // BR-DM-03: chỉ xóa phòng chưa từng có hợp đồng.
-  const soHopDong = await prisma.hopDong.count({ where: { maPhong } });
-  if (soHopDong > 0) return;
-
-  await prisma.phong.delete({ where: { maPhong } });
-  revalidatePath("/cn/phong");
-}
+// TODO: cổng "Xóa phòng" (BR-DM-03) sang Java khi HopDong được map sang Entity —
+// cần đếm số hợp đồng theo phòng trước khi cho xóa.

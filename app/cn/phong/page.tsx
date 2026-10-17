@@ -1,13 +1,22 @@
-import { prisma } from "@/lib/prisma";
+import { getSessionToken } from "@/lib/auth";
+import { goiBackend } from "@/lib/backend";
 import { formatTien, TEN_TRANG_THAI_PHONG } from "@/lib/format";
 import { CreatePhongForm } from "./create-phong-form";
-import { chuyenTrangThaiPhong, xoaPhong } from "./actions";
+import { chuyenTrangThaiPhong } from "./actions";
+
+type PhongApi = {
+  maPhong: string;
+  tang: number;
+  dienTich: number;
+  soNguoiToiDa: number;
+  giaNiemYet: number;
+  coCongToNuoc: boolean;
+  trangThai: "TRONG" | "DANG_THUE" | "NGUNG_KHAI_THAC";
+};
 
 export default async function DanhSachPhongPage() {
-  const danhSachPhong = await prisma.phong.findMany({
-    orderBy: [{ tang: "asc" }, { maPhong: "asc" }],
-    include: { _count: { select: { hopDong: true } } },
-  });
+  const token = await getSessionToken();
+  const danhSachPhong = await goiBackend<PhongApi[]>("/api/phong", { token });
 
   return (
     <div>
@@ -38,9 +47,9 @@ export default async function DanhSachPhongPage() {
                   {phong.maPhong}
                 </td>
                 <td className="px-4 py-2">{phong.tang}</td>
-                <td className="px-4 py-2">{phong.dienTich.toString()} m²</td>
+                <td className="px-4 py-2">{phong.dienTich} m²</td>
                 <td className="px-4 py-2">{phong.soNguoiToiDa}</td>
-                <td className="px-4 py-2">{formatTien(phong.giaNiemYet.toString())}</td>
+                <td className="px-4 py-2">{formatTien(phong.giaNiemYet)}</td>
                 <td className="px-4 py-2">{phong.coCongToNuoc ? "Có" : "Không"}</td>
                 <td className="px-4 py-2">
                   <span
@@ -64,24 +73,11 @@ export default async function DanhSachPhongPage() {
                     >
                       <button
                         type="submit"
-                        className="mr-2 text-xs font-medium text-zinc-600 hover:underline"
+                        className="text-xs font-medium text-zinc-600 hover:underline"
                       >
                         {phong.trangThai === "TRONG"
                           ? "Ngừng khai thác"
                           : "Khai thác lại"}
-                      </button>
-                    </form>
-                  )}
-                  {phong._count.hopDong === 0 && (
-                    <form
-                      action={xoaPhong.bind(null, phong.maPhong)}
-                      className="inline"
-                    >
-                      <button
-                        type="submit"
-                        className="text-xs font-medium text-red-600 hover:underline"
-                      >
-                        Xóa
                       </button>
                     </form>
                   )}

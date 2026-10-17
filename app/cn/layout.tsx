@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { requireSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { getSessionToken, requireSession } from "@/lib/auth";
+import { goiBackend } from "@/lib/backend";
 import { dangXuat } from "@/app/dang-xuat/actions";
 
 const NAV = [
@@ -13,14 +13,15 @@ export default async function ChuNhaLayout({
   children: React.ReactNode;
 }) {
   await requireSession("CHU_NHA");
-  const toaNha = await prisma.toaNha.findFirst();
+  const token = await getSessionToken();
+  const toaNha = await goiBackend<{ tenToa: string }>("/api/toa-nha/mac-dinh", { token });
 
   return (
     <div className="flex min-h-full">
       <aside className="flex w-56 flex-col border-r border-zinc-200 bg-white px-3 py-4">
         <div className="mb-6 px-2">
           <p className="text-sm font-semibold text-zinc-900">
-            {toaNha?.tenToa ?? "Chung cư mini"}
+            {toaNha.tenToa}
           </p>
           <p className="text-xs text-zinc-500">Chủ nhà</p>
         </div>

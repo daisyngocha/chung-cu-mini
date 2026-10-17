@@ -1,9 +1,8 @@
 "use server";
 
-import bcrypt from "bcrypt";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { getSession, setSessionCookie } from "@/lib/auth";
+import { getSession, getSessionToken, setSessionCookie } from "@/lib/auth";
+import { goiBackend, BackendError } from "@/lib/backend";
 
 export type DoiMatKhauState = { error?: string };
 
@@ -12,7 +11,8 @@ export async function doiMatKhau(
   formData: FormData,
 ): Promise<DoiMatKhauState> {
   const session = await getSession();
-  if (!session) redirect("/dang-nhap");
+  const token = await getSessionToken();
+  if (!session || !token) redirect("/dang-nhap");
 
   const matKhauCu = String(formData.get("matKhauCu") ?? "");
   const matKhauMoi = String(formData.get("matKhauMoi") ?? "");
@@ -25,22 +25,18 @@ export async function doiMatKhau(
     return { error: "Xác nhận mật khẩu không khớp." };
   }
 
-  const taiKhoan = await prisma.taiKhoan.findUnique({
-    where: { maTaiKhoan: session.maTaiKhoan },
-  });
-  if (!taiKhoan) redirect("/dang-nhap");
-
-  const khop = await bcrypt.compare(matKhauCu, taiKhoan.matKhauHash);
-  if (!khop) {
-    return { error: "Mật khẩu hiện tại không đúng." };
+  try {
+    await goiBackend("/api/auth/doi-mat-khau", {
+      method: "PATCH",
+      token,
+      body: { matKhauCu, matKhauMoi },
+    });
+  } catch (e) {
+    return { error: e instanceof BackendError ? e.message : "Không kết nối được tới server." };
   }
 
-  const matKhauHash = await bcrypt.hash(matKhauMoi, 10);
-  await prisma.taiKhoan.update({
-    where: { maTaiKhoan: taiKhoan.maTaiKhoan },
-    data: { matKhauHash, phaiDoiMatKhau: false },
-  });
-
+  // Phát hành lại cookie với phaiDoiMatKhau=false (vẫn ký bằng SESSION_SECRET,
+  // trùng JWT_SECRET phía backend nên proxy.ts verify được như cũ).
   await setSessionCookie({ ...session, phaiDoiMatKhau: false });
   redirect("/");
 }
