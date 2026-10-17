@@ -18,4 +18,10 @@ public interface BanGiaoTaiSanRepository extends JpaRepository<BanGiaoTaiSan, St
 
     Optional<BanGiaoTaiSan> findByHopDong_MaHopDongAndTaiSan_MaTaiSanAndLoaiBanGiao(
             String maHopDong, String maTaiSan, LoaiBanGiao loaiBanGiao);
+
+    /** QuyetToan.tinhQuyetToan: dòng BOI_THUONG_HU_HONG = tổng chiPhiHuHong của mọi bản ghi trả phòng. */
+    @Query(
+            "SELECT COALESCE(SUM(b.chiPhiHuHong), 0) FROM BanGiaoTaiSan b "
+                    + "WHERE b.hopDong.maHopDong = :maHopDong AND b.loaiBanGiao = 'TRA_PHONG'")
+    java.math.BigDecimal tongChiPhiHuHong(@Param("maHopDong") String maHopDong);
 }

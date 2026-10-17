@@ -47,7 +47,7 @@ public class ThongBaoTien {
     @Column(name = "\"tongTien\"", precision = 15, scale = 0, nullable = false)
     private BigDecimal tongTien;
 
-    /** = Σ PhieuThu.soTien có trangThai HIEU_LUC — PhieuThu chưa cài (GĐ4), luôn 0 cho tới khi đó. */
+    /** = Σ PhieuThu.soTien có trangThai HIEU_LUC — cập nhật bởi ThongBaoTienService.capNhatTrangThaiThu. */
     @Column(name = "\"soDaThu\"", precision = 15, scale = 0, nullable = false)
     private BigDecimal soDaThu = BigDecimal.ZERO;
 
