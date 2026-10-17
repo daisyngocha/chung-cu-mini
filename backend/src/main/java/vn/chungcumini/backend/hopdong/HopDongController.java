@@ -88,6 +88,11 @@ public class HopDongController {
         return HopDongResponse.tu(hopDongService.xacNhanThuHoiChiaKhoa(maHopDong, maTaiKhoan));
     }
 
+    @PatchMapping("/{maHopDong}/thanh-ly")
+    public HopDongResponse thanhLy(@PathVariable String maHopDong, @RequestBody ThanhLyRequest req, @AuthenticationPrincipal String maTaiKhoan) {
+        return HopDongResponse.tu(hopDongService.thanhLy(maHopDong, req.boQuaCanhBaoChuaThuHoiChiaKhoa(), maTaiKhoan));
+    }
+
     @GetMapping("/tam-tru")
     public ResponseEntity<byte[]> xuatDanhSachTamTru(
             @RequestParam LocalDate tuNgay, @RequestParam LocalDate denNgay, @AuthenticationPrincipal String maTaiKhoan) {

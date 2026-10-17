@@ -19,4 +19,7 @@ public interface ChiSoRepository extends JpaRepository<ChiSo, String> {
 
     /** Lần ghi gần nhất (mọi loại ghi) của một công tơ — để tự lấy chiSoCu khi ghi chỉ số mới. */
     Optional<ChiSo> findFirstByHopDong_MaHopDongAndLoaiCongToOrderByNgayGhiDescMaChiSoDesc(String maHopDong, LoaiCongTo loaiCongTo);
+
+    /** QuyetToan.tinhQuyetToan: chỉ số cuối kỳ (đọc khi trả phòng) — duy nhất 1 lần/công tơ/HĐ. */
+    Optional<ChiSo> findByHopDong_MaHopDongAndLoaiCongToAndLoaiGhi(String maHopDong, LoaiCongTo loaiCongTo, LoaiGhi loaiGhi);
 }

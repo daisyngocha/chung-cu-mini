@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import vn.chungcumini.backend.domain.LoaiThongBao;
 import vn.chungcumini.backend.domain.ThongBaoTien;
 import vn.chungcumini.backend.domain.TrangThaiTBT;
 
@@ -25,4 +26,14 @@ public interface ThongBaoTienRepository extends JpaRepository<ThongBaoTien, Stri
     List<ThongBaoTien> timTruocKy(@Param("maHopDong") String maHopDong, @Param("kyThang") String kyThang);
 
     long countByMaThongBaoTienStartingWith(String tienTo);
+
+    /** QuyetToan.tinhQuyetToan: dòng NO_CHUA_TRA = tổng còn thiếu của các thông báo đã phát hành chưa thu đủ. */
+    @Query(
+            "SELECT COALESCE(SUM(t.tongTien - t.soDaThu), 0) FROM ThongBaoTien t WHERE t.hopDong.maHopDong = :maHopDong "
+                    + "AND t.trangThai IN ('DA_PHAT_HANH', 'DA_THU_MOT_PHAN', 'QUA_HAN', 'CHO_XAC_NHAN')")
+    java.math.BigDecimal tongNoChuaTra(@Param("maHopDong") String maHopDong);
+
+    /** QuyetToan.tinhQuyetToan: kỳ HANG_THANG đã lập gần nhất — mốc tính phần điện/nước/dịch vụ chưa lập hóa đơn. */
+    Optional<ThongBaoTien> findFirstByHopDong_MaHopDongAndLoaiThongBaoAndTrangThaiNotOrderByKyThangDesc(
+            String maHopDong, LoaiThongBao loaiThongBao, TrangThaiTBT trangThai);
 }

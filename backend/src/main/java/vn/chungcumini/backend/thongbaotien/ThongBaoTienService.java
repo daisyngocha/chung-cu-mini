@@ -55,6 +55,14 @@ public class ThongBaoTienService {
         return dongThongBaoTienRepository.findByThongBaoTien_MaThongBaoTien(maThongBaoTien);
     }
 
+    /** QuyetToan.lapThongBaoThuThem: gắn thông báo THU_THEM_QUYET_TOAN vào quyết toán gốc. */
+    @Transactional
+    public void ganQuyetToan(String maThongBaoTien, String maQuyetToan) {
+        ThongBaoTien tb = timHoacNem(maThongBaoTien);
+        tb.setMaQuyetToan(maQuyetToan);
+        thongBaoTienRepository.save(tb);
+    }
+
     /** Tạo bản ghi NHAP — CRUD cơ bản dùng chung cho lapThongBaoKyHopDong (HopDong) và lapThongBaoHangLoat. */
     @Transactional
     public ThongBaoTien taoNhap(HopDong hopDong, LoaiThongBao loaiThongBao, String kyThang, LocalDate hanThanhToan, BigDecimal noCu) {
