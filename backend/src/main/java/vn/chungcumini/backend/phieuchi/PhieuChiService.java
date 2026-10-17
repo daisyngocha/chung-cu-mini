@@ -1,6 +1,7 @@
 package vn.chungcumini.backend.phieuchi;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import vn.chungcumini.backend.domain.PhieuChi;
 import vn.chungcumini.backend.repository.PhieuChiRepository;
@@ -17,6 +18,10 @@ public class PhieuChiService {
     public PhieuChi timHoacNem(String soPhieuChi) {
         return phieuChiRepository.timChiTiet(soPhieuChi)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiếu chi \"" + soPhieuChi + "\"."));
+    }
+
+    public Optional<PhieuChi> timTheoQuyetToan(String maQuyetToan) {
+        return phieuChiRepository.findByQuyetToan_MaQuyetToan(maQuyetToan);
     }
 
     /** PhieuChi.docSoTienBangChu. */

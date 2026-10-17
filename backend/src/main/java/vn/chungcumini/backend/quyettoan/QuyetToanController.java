@@ -5,6 +5,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import vn.chungcumini.backend.phieuchi.PhieuChiResponse;
+import vn.chungcumini.backend.phieuchi.PhieuChiService;
 import vn.chungcumini.backend.thongbaotien.DongThongBaoTienResponse;
 import vn.chungcumini.backend.thongbaotien.ThongBaoTienResponse;
 import vn.chungcumini.backend.thongbaotien.ThongBaoTienService;
@@ -16,10 +17,13 @@ public class QuyetToanController {
 
     private final QuyetToanService quyetToanService;
     private final ThongBaoTienService thongBaoTienService;
+    private final PhieuChiService phieuChiService;
 
-    public QuyetToanController(QuyetToanService quyetToanService, ThongBaoTienService thongBaoTienService) {
+    public QuyetToanController(
+            QuyetToanService quyetToanService, ThongBaoTienService thongBaoTienService, PhieuChiService phieuChiService) {
         this.quyetToanService = quyetToanService;
         this.thongBaoTienService = thongBaoTienService;
+        this.phieuChiService = phieuChiService;
     }
 
     @PostMapping("/api/hop-dong/{maHopDong}/quyet-toan")
@@ -82,10 +86,26 @@ public class QuyetToanController {
         return PhieuChiResponse.tu(quyetToanService.lapPhieuChi(maQuyetToan, req.hinhThuc(), maTaiKhoan));
     }
 
+    /** Màn hình Quyết toán: biết đã lập phiếu chi hay chưa khi quay lại trang sau khi đã HOAN_TAT. */
+    @GetMapping("/api/quyet-toan/{maQuyetToan}/phieu-chi")
+    public PhieuChiResponse phieuChiDaLap(@PathVariable String maQuyetToan) {
+        return phieuChiService.timTheoQuyetToan(maQuyetToan).map(PhieuChiResponse::tu).orElse(null);
+    }
+
     @PostMapping("/api/quyet-toan/{maQuyetToan}/thong-bao-thu-them")
     public ThongBaoTienResponse lapThongBaoThuThem(@PathVariable String maQuyetToan, @AuthenticationPrincipal String maTaiKhoan) {
         var tb = quyetToanService.lapThongBaoThuThem(maQuyetToan, maTaiKhoan);
         var dong = thongBaoTienService.layDongTheoThongBao(tb.getMaThongBaoTien()).stream().map(DongThongBaoTienResponse::tu).toList();
         return ThongBaoTienResponse.tu(tb, dong);
+    }
+
+    /** Màn hình Quyết toán: biết đã lập thông báo thu thêm hay chưa khi quay lại trang sau khi đã HOAN_TAT. */
+    @GetMapping("/api/quyet-toan/{maQuyetToan}/thong-bao-thu-them")
+    public ThongBaoTienResponse thongBaoThuThemDaLap(@PathVariable String maQuyetToan) {
+        return thongBaoTienService.timThongBaoThuThem(maQuyetToan)
+                .map(tb -> ThongBaoTienResponse.tu(
+                        tb, thongBaoTienService.layDongTheoThongBao(tb.getMaThongBaoTien()).stream()
+                                .map(DongThongBaoTienResponse::tu).toList()))
+                .orElse(null);
     }
 }

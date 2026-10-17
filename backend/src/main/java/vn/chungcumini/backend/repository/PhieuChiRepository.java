@@ -14,4 +14,7 @@ public interface PhieuChiRepository extends JpaRepository<PhieuChi, String> {
     Optional<PhieuChi> timChiTiet(@Param("soPhieuChi") String soPhieuChi);
 
     long countBySoPhieuChiStartingWith(String tienTo);
+
+    /** Màn hình Quyết toán: biết đã lập phiếu chi hay chưa khi quay lại trang sau khi đã HOAN_TAT. */
+    Optional<PhieuChi> findByQuyetToan_MaQuyetToan(String maQuyetToan);
 }

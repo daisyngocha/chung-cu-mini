@@ -58,4 +58,7 @@ public interface ThongBaoTienRepository extends JpaRepository<ThongBaoTien, Stri
 
     /** HopDong.xacNhanNhanPhong (BR-CT-05): mỗi HĐ có đúng 1 thông báo KY_HOP_DONG (lapThongBaoKyHopDong). */
     Optional<ThongBaoTien> findByHopDong_MaHopDongAndLoaiThongBao(String maHopDong, LoaiThongBao loaiThongBao);
+
+    /** Màn hình Quyết toán: biết đã lập thông báo thu thêm hay chưa khi quay lại trang sau khi đã HOAN_TAT. */
+    Optional<ThongBaoTien> findByMaQuyetToan(String maQuyetToan);
 }

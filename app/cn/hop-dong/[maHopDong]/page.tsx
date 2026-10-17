@@ -14,6 +14,7 @@ import {
   BaoTraPhongForm,
   ThuHoiChiaKhoaButton,
   NguoiORoiDiButton,
+  ThanhLyForm,
 } from "./forms";
 
 type HopDongApi = {
@@ -63,7 +64,18 @@ export default async function HopDongDetailPage({
   const choNhanPhong = hopDong.trangThai === "CHO_NHAN_PHONG";
   const hieuLuc = hopDong.trangThai === "HIEU_LUC";
   const chuaBaoTra = hieuLuc && !hopDong.ngayBaoTra;
-  const choThuHoiChiaKhoa = hieuLuc && hopDong.ngayBaoTra && !hopDong.daThuHoiChiaKhoa;
+  const daBaoTra = hieuLuc && !!hopDong.ngayBaoTra;
+  const choThuHoiChiaKhoa = daBaoTra && !hopDong.daThuHoiChiaKhoa;
+
+  let maQuyetToan: string | null = null;
+  if (daBaoTra) {
+    try {
+      const qt = await goiBackend<{ maQuyetToan: string }>(`/api/hop-dong/${maHopDong}/quyet-toan`, { token });
+      maQuyetToan = qt.maQuyetToan;
+    } catch {
+      maQuyetToan = null;
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -157,7 +169,18 @@ export default async function HopDongDetailPage({
         </>
       )}
 
+      {daBaoTra && (
+        <Link
+          href={maQuyetToan ? `/cn/quyet-toan/${maQuyetToan}` : `/cn/tra-phong/${maHopDong}`}
+          className="self-start rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800"
+        >
+          {maQuyetToan ? "Xem quyết toán cọc" : "Xử lý trả phòng"}
+        </Link>
+      )}
+
       {choThuHoiChiaKhoa && <ThuHoiChiaKhoaButton maHopDong={maHopDong} />}
+
+      {daBaoTra && <ThanhLyForm maHopDong={maHopDong} />}
     </div>
   );
 }
