@@ -32,6 +32,10 @@ public interface ThongBaoTienRepository extends JpaRepository<ThongBaoTien, Stri
 
     long countByMaThongBaoTienStartingWith(String tienTo);
 
+    /** SuCo.tinhPhiChoKhach: gắn phí phát sinh vào thông báo NHAP của kỳ hiện tại, tạo chờ nếu chưa lập. */
+    Optional<ThongBaoTien> findByHopDong_MaHopDongAndKyThangAndTrangThai(
+            String maHopDong, String kyThang, TrangThaiTBT trangThai);
+
     /** QuyetToan.tinhQuyetToan: dòng NO_CHUA_TRA = tổng còn thiếu của các thông báo đã phát hành chưa thu đủ. */
     @Query(
             "SELECT COALESCE(SUM(t.tongTien - t.soDaThu), 0) FROM ThongBaoTien t WHERE t.hopDong.maHopDong = :maHopDong "
