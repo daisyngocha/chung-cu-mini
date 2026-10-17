@@ -13,6 +13,8 @@ const NAV = [
   { href: "/cn/tam-tru", label: "Danh sách tạm trú" },
   { href: "/cn/chi-so", label: "Ghi chỉ số" },
   { href: "/cn/thong-bao-tien", label: "Thông báo tiền" },
+  { href: "/cn/xac-nhan-thanh-toan", label: "Xác nhận thanh toán" },
+  { href: "/cn/phieu-thu", label: "Phiếu thu" },
 ];
 
 export default async function ChuNhaLayout({
