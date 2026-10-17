@@ -1,17 +1,13 @@
 package vn.chungcumini.backend.domain;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-/**
- * Ánh xạ rút gọn: chỉ các cột mà Phong cần đọc (BR-CT-03, Phong.coTheXoa/layHopDongHieuLuc/laSapTra).
- * Chưa dùng để tạo/sửa hợp đồng — các thuộc tính và phương thức còn lại của lớp HopDong
- * (maKhach, giaThue, taoMoi, xacNhanNhanPhong...) thuộc giai đoạn kế tiếp (module Hợp đồng).
- */
 @Entity
 @Table(name = "\"HopDong\"")
 @Getter
@@ -22,13 +18,43 @@ public class HopDong {
     @Column(name = "\"maHopDong\"", length = 20)
     private String maHopDong;
 
-    @Column(name = "\"maPhong\"", length = 10, nullable = false)
-    private String maPhong;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "\"maPhong\"", nullable = false)
+    private Phong phong;
 
-    @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "\"trangThai\"", columnDefinition = "\"TrangThaiHD\"", nullable = false)
-    private TrangThaiHD trangThai;
+    /** Người đứng tên hợp đồng. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "\"maKhach\"", nullable = false)
+    private KhachThue khachThue;
+
+    /** NULL tới khi cấp tài khoản (P01 bước 5). */
+    @Column(name = "\"maTaiKhoan\"", length = 20)
+    private String maTaiKhoan;
+
+    /** NULL = tài khoản cấp cho người đứng tên; có giá trị = cấp cho một NguoiO. */
+    @Column(name = "\"maNguoiOCapTK\"", length = 20)
+    private String maNguoiOCapTK;
+
+    @Column(name = "\"ngayBatDau\"", nullable = false)
+    private LocalDate ngayBatDau;
+
+    @Column(name = "\"ngayHetHan\"", nullable = false)
+    private LocalDate ngayHetHan;
+
+    @Column(name = "\"giaThue\"", precision = 15, scale = 0, nullable = false)
+    private BigDecimal giaThue;
+
+    @Column(name = "\"tienCoc\"", precision = 15, scale = 0, nullable = false)
+    private BigDecimal tienCoc;
+
+    @Column(name = "\"mucPhatTraTruoc\"", precision = 15, scale = 0, nullable = false)
+    private BigDecimal mucPhatTraTruoc = BigDecimal.ZERO;
+
+    @Column(name = "\"anhHopDong\"", length = 1000)
+    private String anhHopDong;
+
+    @Column(name = "\"ngayNhanPhong\"")
+    private LocalDate ngayNhanPhong;
 
     @Column(name = "\"ngayBaoTra\"")
     private LocalDate ngayBaoTra;
@@ -38,4 +64,20 @@ public class HopDong {
 
     @Column(name = "\"ngayTraThucTe\"")
     private LocalDate ngayTraThucTe;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "\"trangThai\"", columnDefinition = "\"TrangThaiHD\"", nullable = false)
+    private TrangThaiHD trangThai = TrangThaiHD.CHO_NHAN_PHONG;
+
+    @Column(name = "\"lyDoNhanPhongChuaThuDu\"", length = 500)
+    private String lyDoNhanPhongChuaThuDu;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "\"loaiKetThuc\"", columnDefinition = "\"LoaiKetThuc\"")
+    private LoaiKetThuc loaiKetThuc;
+
+    @Column(name = "\"daThuHoiChiaKhoa\"", nullable = false)
+    private boolean daThuHoiChiaKhoa = false;
 }
