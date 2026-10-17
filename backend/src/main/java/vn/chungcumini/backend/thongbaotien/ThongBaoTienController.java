@@ -2,6 +2,7 @@ package vn.chungcumini.backend.thongbaotien;
 
 import jakarta.validation.Valid;
 import java.time.LocalDate;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -39,9 +40,11 @@ public class ThongBaoTienController {
     }
 
     @PatchMapping("/{maThongBaoTien}/phat-hanh")
-    public ThongBaoTienResponse phatHanh(@PathVariable String maThongBaoTien, @AuthenticationPrincipal String maTaiKhoan) {
-        thongBaoTienService.phatHanh(maThongBaoTien, maTaiKhoan);
-        return chiTiet(maThongBaoTien);
+    public ResponseEntity<ThongBaoTienResponse> phatHanh(@PathVariable String maThongBaoTien, @AuthenticationPrincipal String maTaiKhoan) {
+        boolean canhBaoHetHan = thongBaoTienService.phatHanh(maThongBaoTien, maTaiKhoan);
+        return ResponseEntity.ok()
+                .header("X-Canh-Bao-Het-Han", String.valueOf(canhBaoHetHan))
+                .body(chiTiet(maThongBaoTien));
     }
 
     @PatchMapping("/{maThongBaoTien}/huy")
