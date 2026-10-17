@@ -10,6 +10,7 @@ import vn.chungcumini.backend.domain.ChiSo;
 import vn.chungcumini.backend.domain.DongThongBaoTien;
 import vn.chungcumini.backend.domain.HopDong;
 import vn.chungcumini.backend.domain.LoaiKhoanTBT;
+import vn.chungcumini.backend.domain.LoaiSuKien;
 import vn.chungcumini.backend.domain.LoaiThongBao;
 import vn.chungcumini.backend.domain.ThongBaoTien;
 import vn.chungcumini.backend.domain.TrangThaiTBT;
@@ -21,9 +22,9 @@ import vn.chungcumini.backend.repository.ChiSoRepository;
 import vn.chungcumini.backend.repository.DongThongBaoTienRepository;
 import vn.chungcumini.backend.repository.PhieuThuRepository;
 import vn.chungcumini.backend.repository.ThongBaoTienRepository;
+import vn.chungcumini.backend.thongbao.ThongBaoService;
 import vn.chungcumini.backend.toanha.ToaNhaService;
 
-/** Gửi ThongBao (TB_TIEN_MOI, KHACH_BAO_TRA...) chưa cài — module Thông báo chưa được xây. */
 @Service
 public class ThongBaoTienService {
 
@@ -33,6 +34,7 @@ public class ThongBaoTienService {
     private final PhieuThuRepository phieuThuRepository;
     private final ToaNhaService toaNhaService;
     private final NhatKyThaoTacService nhatKyThaoTacService;
+    private final ThongBaoService thongBaoService;
 
     public ThongBaoTienService(
             ThongBaoTienRepository thongBaoTienRepository,
@@ -40,13 +42,15 @@ public class ThongBaoTienService {
             ChiSoRepository chiSoRepository,
             PhieuThuRepository phieuThuRepository,
             ToaNhaService toaNhaService,
-            NhatKyThaoTacService nhatKyThaoTacService) {
+            NhatKyThaoTacService nhatKyThaoTacService,
+            ThongBaoService thongBaoService) {
         this.thongBaoTienRepository = thongBaoTienRepository;
         this.dongThongBaoTienRepository = dongThongBaoTienRepository;
         this.chiSoRepository = chiSoRepository;
         this.phieuThuRepository = phieuThuRepository;
         this.toaNhaService = toaNhaService;
         this.nhatKyThaoTacService = nhatKyThaoTacService;
+        this.thongBaoService = thongBaoService;
     }
 
     public ThongBaoTien timHoacNem(String maThongBaoTien) {
@@ -196,6 +200,14 @@ public class ThongBaoTienService {
 
         nhatKyThaoTacService.ghiNhan(maTaiKhoanThucHien, "ThongBaoTien", maThongBaoTien, "PHAT_HANH", "Phát hành thông báo tiền.");
 
+        if (tb.getHopDong().getMaTaiKhoan() != null) {
+            thongBaoService.guiDen(
+                    LoaiSuKien.TB_TIEN_MOI, "Thông báo tiền mới",
+                    "Phòng " + tb.getHopDong().getPhong().getMaPhong() + " có thông báo tiền kỳ " + tb.getKyThang()
+                            + ", hạn thanh toán " + tb.getHanThanhToan() + ".",
+                    "ThongBaoTien:" + maThongBaoTien, List.of(tb.getHopDong().getMaTaiKhoan()));
+        }
+
         // BR-HD-03: tiền phòng của thông báo HANG_THANG luôn cho tháng kế tiếp kyThang (xem
         // lapThongBaoHangLoat) — cảnh báo nếu HĐ hết hạn trong đúng tháng đó. Không áp dụng cho
         // KY_HOP_DONG (tiền phòng của nó là phần còn lại của tháng ký, không phải tháng sau).
@@ -255,6 +267,14 @@ public class ThongBaoTienService {
         }
         tb.setTrangThai(TrangThaiTBT.QUA_HAN);
         thongBaoTienRepository.save(tb);
+
+        if (tb.getHopDong().getMaTaiKhoan() != null) {
+            thongBaoService.guiDen(
+                    LoaiSuKien.QUA_HAN_TT, "Quá hạn thanh toán",
+                    "Thông báo tiền kỳ " + tb.getKyThang() + " của phòng " + tb.getHopDong().getPhong().getMaPhong()
+                            + " đã quá hạn thanh toán (" + tb.getHanThanhToan() + ").",
+                    "ThongBaoTien:" + maThongBaoTien, List.of(tb.getHopDong().getMaTaiKhoan()));
+        }
     }
 
     /**

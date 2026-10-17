@@ -12,6 +12,7 @@ import vn.chungcumini.backend.domain.HopDongDichVu;
 import vn.chungcumini.backend.domain.KhachThue;
 import vn.chungcumini.backend.domain.LoaiKetThuc;
 import vn.chungcumini.backend.domain.LoaiKhoanTBT;
+import vn.chungcumini.backend.domain.LoaiSuKien;
 import vn.chungcumini.backend.domain.LoaiThayDoi;
 import vn.chungcumini.backend.domain.LoaiThongBao;
 import vn.chungcumini.backend.domain.NguoiO;
@@ -32,6 +33,7 @@ import vn.chungcumini.backend.repository.PhongRepository;
 import vn.chungcumini.backend.repository.QuyetToanRepository;
 import vn.chungcumini.backend.taikhoan.TaiKhoanService;
 import vn.chungcumini.backend.taikhoan.TaoTaiKhoanKhachResult;
+import vn.chungcumini.backend.thongbao.ThongBaoService;
 import vn.chungcumini.backend.thongbaotien.ThongBaoTienService;
 
 @Service
@@ -50,6 +52,7 @@ public class HopDongService {
     private final PhongService phongService;
     private final TaiKhoanService taiKhoanService;
     private final NhatKyThaoTacService nhatKyThaoTacService;
+    private final ThongBaoService thongBaoService;
 
     public HopDongService(
             HopDongRepository hopDongRepository,
@@ -64,7 +67,8 @@ public class HopDongService {
             LichSuHopDongService lichSuHopDongService,
             PhongService phongService,
             TaiKhoanService taiKhoanService,
-            NhatKyThaoTacService nhatKyThaoTacService) {
+            NhatKyThaoTacService nhatKyThaoTacService,
+            ThongBaoService thongBaoService) {
         this.hopDongRepository = hopDongRepository;
         this.phongRepository = phongRepository;
         this.khachThueRepository = khachThueRepository;
@@ -78,6 +82,7 @@ public class HopDongService {
         this.phongService = phongService;
         this.taiKhoanService = taiKhoanService;
         this.nhatKyThaoTacService = nhatKyThaoTacService;
+        this.thongBaoService = thongBaoService;
     }
 
     public HopDong timHoacNem(String maHopDong) {
@@ -286,6 +291,12 @@ public class HopDongService {
         hopDong.setNgayTraDuKien(ngayTraDuKien);
         hopDong.setLoaiKetThuc(loaiKetThuc);
         hopDongRepository.save(hopDong);
+
+        thongBaoService.guiChoChuNha(
+                LoaiSuKien.KHACH_BAO_TRA, "Khách báo trả phòng",
+                "Phòng " + hopDong.getPhong().getMaPhong() + " báo trả phòng, dự kiến ngày " + ngayTraDuKien + ".",
+                "HopDong:" + maHopDong);
+
         return ngayTraDuKien.isBefore(hopDong.getNgayHetHan());
     }
 
