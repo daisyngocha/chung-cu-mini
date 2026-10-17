@@ -25,4 +25,8 @@ public interface ThongBaoTienRepository extends JpaRepository<ThongBaoTien, Stri
     List<ThongBaoTien> timTruocKy(@Param("maHopDong") String maHopDong, @Param("kyThang") String kyThang);
 
     long countByMaThongBaoTienStartingWith(String tienTo);
+
+    /** SuCo.tinhPhiChoKhach: gắn phí phát sinh vào thông báo NHAP của kỳ hiện tại, tạo chờ nếu chưa lập. */
+    Optional<ThongBaoTien> findByHopDong_MaHopDongAndKyThangAndTrangThai(
+            String maHopDong, String kyThang, TrangThaiTBT trangThai);
 }

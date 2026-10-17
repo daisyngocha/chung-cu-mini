@@ -84,6 +84,12 @@ public class HopDongService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hợp đồng \"" + maHopDong + "\"."));
     }
 
+    /** HĐ hiệu lực của tài khoản khách đang đăng nhập (Mục 11: khách chỉ thao tác trên phòng mình). */
+    public HopDong layHopDongHieuLucCuaTaiKhoan(String maTaiKhoan) {
+        return hopDongRepository.findHieuLucByMaTaiKhoan(maTaiKhoan)
+                .orElseThrow(() -> new IllegalArgumentException("Tài khoản không có hợp đồng đang hiệu lực."));
+    }
+
     /** HopDong.kiemTraThoiHan: thời hạn tối thiểu 3 tháng (BR-CT-02). */
     public boolean kiemTraThoiHan(LocalDate ngayBatDau, LocalDate ngayHetHan) {
         return !ngayHetHan.isBefore(ngayBatDau.plusMonths(3).minusDays(1));
