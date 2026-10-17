@@ -28,6 +28,9 @@ public interface HopDongRepository extends JpaRepository<HopDong, String> {
     @Query("SELECT h FROM HopDong h JOIN FETCH h.phong JOIN FETCH h.khachThue")
     List<HopDong> findAllChiTiet();
 
+    @Query("SELECT h FROM HopDong h JOIN FETCH h.phong WHERE h.trangThai = :trangThai")
+    List<HopDong> findByTrangThaiWithPhong(@Param("trangThai") TrangThaiHD trangThai);
+
     default Optional<HopDong> timHopDongHieuLucCua(String maPhong) {
         List<HopDong> ds = findByMaPhongAndTrangThaiIn(maPhong, List.of(TrangThaiHD.HIEU_LUC, TrangThaiHD.CHO_NHAN_PHONG));
         return ds.isEmpty() ? Optional.empty() : Optional.of(ds.get(0));
