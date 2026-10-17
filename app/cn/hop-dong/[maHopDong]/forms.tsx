@@ -2,7 +2,6 @@
 
 import { useActionState } from "react";
 import {
-  xacNhanNhanPhong,
   themNguoiO,
   giaHan,
   dieuChinhGia,
@@ -25,31 +24,6 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
       <h3 className="text-sm font-semibold text-zinc-900">{title}</h3>
       {children}
     </div>
-  );
-}
-
-export function NhanPhongForm({ maHopDong }: { maHopDong: string }) {
-  const [state, formAction, isPending] = useActionState(
-    xacNhanNhanPhong.bind(null, maHopDong),
-    initialState,
-  );
-  return (
-    <Card title="Xác nhận nhận phòng">
-      <form action={formAction} className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1">
-          <label className={labelCls}>Lý do (nếu chưa thu đủ tiền ký HĐ)</label>
-          <input name="lyDo" className={`w-64 ${inputCls}`} />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className={labelCls}>Mã người ở được cấp tài khoản</label>
-          <input name="maNguoiOCapTK" className={`w-48 ${inputCls}`} />
-        </div>
-        <button type="submit" disabled={isPending} className={btnCls}>
-          {isPending ? "Đang xác nhận..." : "Xác nhận nhận phòng"}
-        </button>
-      </form>
-      {state.error && <p className={errCls}>{state.error}</p>}
-    </Card>
   );
 }
 

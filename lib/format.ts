@@ -28,6 +28,48 @@ export const TEN_LOAI_KHOAN: Record<string, string> = {
   DICH_VU_THEO_XE: "Dịch vụ theo xe",
 };
 
+export const TEN_LOAI_CONG_TO: Record<string, string> = {
+  DIEN: "Điện",
+  NUOC: "Nước",
+};
+
+export const TEN_LOAI_GHI: Record<string, string> = {
+  DAU_KY: "Đầu kỳ",
+  HANG_THANG: "Hàng tháng",
+  CUOI_KY: "Cuối kỳ",
+};
+
+export const TEN_TRANG_THAI_TBT: Record<string, string> = {
+  NHAP: "Nháp",
+  DA_PHAT_HANH: "Đã phát hành",
+  CHO_XAC_NHAN: "Chờ xác nhận",
+  DA_THU_MOT_PHAN: "Đã thu một phần",
+  DA_THU_DU: "Đã thu đủ",
+  QUA_HAN: "Quá hạn",
+  DA_HUY: "Đã hủy",
+};
+
+export const TEN_LOAI_KHOAN_TBT: Record<string, string> = {
+  TIEN_PHONG: "Tiền phòng",
+  TIEN_COC: "Tiền cọc",
+  DIEN: "Điện",
+  NUOC: "Nước",
+  DICH_VU: "Dịch vụ",
+  PHI_PHAT_SINH: "Phí phát sinh",
+  GIAM_TRU: "Giảm trừ",
+  DIEU_CHINH: "Điều chỉnh",
+};
+
+export const TEN_HINH_THUC_TT: Record<string, string> = {
+  CHUYEN_KHOAN: "Chuyển khoản",
+  TIEN_MAT: "Tiền mặt",
+};
+
+export const TEN_LOAI_BAN_GIAO: Record<string, string> = {
+  NHAN_PHONG: "Nhận phòng",
+  TRA_PHONG: "Trả phòng",
+};
+
 export function formatNgay(ngay: string | null | undefined) {
   if (!ngay) return "—";
   return new Intl.DateTimeFormat("vi-VN").format(new Date(ngay));

@@ -8,7 +8,6 @@ import {
   TEN_LOAI_KET_THUC,
 } from "@/lib/format";
 import {
-  NhanPhongForm,
   ThemNguoiOForm,
   GiaHanForm,
   DieuChinhGiaForm,
@@ -100,7 +99,14 @@ export default async function HopDongDetailPage({
         )}
       </div>
 
-      {choNhanPhong && <NhanPhongForm maHopDong={maHopDong} />}
+      {choNhanPhong && (
+        <Link
+          href={`/cn/nhan-phong/${maHopDong}`}
+          className="self-start rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800"
+        >
+          Xử lý nhận phòng
+        </Link>
+      )}
 
       <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
         <div className="border-b border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-900">
