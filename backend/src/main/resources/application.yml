@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/chung_cu_mini_dev}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+  jpa:
+    # Prisma Migrate vẫn giữ quyền tạo/sửa schema (xem prisma/migrations).
+    # Hibernate chỉ đọc/ghi data, KHÔNG tự sinh DDL — tránh hai bên đá lịch sử migrate của nhau.
+    hibernate:
+      ddl-auto: validate
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+app:
+  jwt-secret: ${JWT_SECRET:dev-only-jwt-secret-change-me-xxxxxxxxxxxxxxxx}
