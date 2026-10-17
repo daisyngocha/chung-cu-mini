@@ -32,6 +32,16 @@ public interface ThongBaoTienRepository extends JpaRepository<ThongBaoTien, Stri
 
     long countByMaThongBaoTienStartingWith(String tienTo);
 
+    /** QuyetToan.tinhQuyetToan: dòng NO_CHUA_TRA = tổng còn thiếu của các thông báo đã phát hành chưa thu đủ. */
+    @Query(
+            "SELECT COALESCE(SUM(t.tongTien - t.soDaThu), 0) FROM ThongBaoTien t WHERE t.hopDong.maHopDong = :maHopDong "
+                    + "AND t.trangThai IN ('DA_PHAT_HANH', 'DA_THU_MOT_PHAN', 'QUA_HAN', 'CHO_XAC_NHAN')")
+    java.math.BigDecimal tongNoChuaTra(@Param("maHopDong") String maHopDong);
+
+    /** QuyetToan.tinhQuyetToan: kỳ HANG_THANG đã lập gần nhất — mốc tính phần điện/nước/dịch vụ chưa lập hóa đơn. */
+    Optional<ThongBaoTien> findFirstByHopDong_MaHopDongAndLoaiThongBaoAndTrangThaiNotOrderByKyThangDesc(
+            String maHopDong, LoaiThongBao loaiThongBao, TrangThaiTBT trangThai);
+
     /** HopDong.xacNhanNhanPhong (BR-CT-05): mỗi HĐ có đúng 1 thông báo KY_HOP_DONG (lapThongBaoKyHopDong). */
     Optional<ThongBaoTien> findByHopDong_MaHopDongAndLoaiThongBao(String maHopDong, LoaiThongBao loaiThongBao);
 }

@@ -58,6 +58,14 @@ public class ThongBaoTienService {
         return dongThongBaoTienRepository.findByThongBaoTien_MaThongBaoTien(maThongBaoTien);
     }
 
+    /** QuyetToan.lapThongBaoThuThem: gắn thông báo THU_THEM_QUYET_TOAN vào quyết toán gốc. */
+    @Transactional
+    public void ganQuyetToan(String maThongBaoTien, String maQuyetToan) {
+        ThongBaoTien tb = timHoacNem(maThongBaoTien);
+        tb.setMaQuyetToan(maQuyetToan);
+        thongBaoTienRepository.save(tb);
+    }
+
     /** Mục 11: danh sách thông báo tiền của khách đang đăng nhập — lọc theo phòng đang thuê. */
     public List<ThongBaoTien> layTheoTaiKhoanKhach(String maTaiKhoan) {
         return thongBaoTienRepository.timTheoTaiKhoanKhach(maTaiKhoan);

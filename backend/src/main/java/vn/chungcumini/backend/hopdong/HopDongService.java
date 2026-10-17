@@ -16,8 +16,10 @@ import vn.chungcumini.backend.domain.LoaiThayDoi;
 import vn.chungcumini.backend.domain.LoaiThongBao;
 import vn.chungcumini.backend.domain.NguoiO;
 import vn.chungcumini.backend.domain.Phong;
+import vn.chungcumini.backend.domain.QuyetToan;
 import vn.chungcumini.backend.domain.TrangThaiHD;
 import vn.chungcumini.backend.domain.TrangThaiPhong;
+import vn.chungcumini.backend.domain.TrangThaiQT;
 import vn.chungcumini.backend.nhatky.NhatKyThaoTacService;
 import vn.chungcumini.backend.phong.PhongService;
 import vn.chungcumini.backend.repository.BangGiaRepository;
@@ -27,13 +29,11 @@ import vn.chungcumini.backend.repository.KhachThueRepository;
 import vn.chungcumini.backend.repository.LichSuHopDongRepository;
 import vn.chungcumini.backend.repository.NguoiORepository;
 import vn.chungcumini.backend.repository.PhongRepository;
+import vn.chungcumini.backend.repository.QuyetToanRepository;
 import vn.chungcumini.backend.taikhoan.TaiKhoanService;
 import vn.chungcumini.backend.taikhoan.TaoTaiKhoanKhachResult;
 import vn.chungcumini.backend.thongbaotien.ThongBaoTienService;
 
-/**
- * thanhLy() CHƯA cài — cần module QuyetToan (GĐ5).
- */
 @Service
 public class HopDongService {
 
@@ -44,6 +44,7 @@ public class HopDongService {
     private final BangGiaRepository bangGiaRepository;
     private final NguoiORepository nguoiORepository;
     private final LichSuHopDongRepository lichSuHopDongRepository;
+    private final QuyetToanRepository quyetToanRepository;
     private final ThongBaoTienService thongBaoTienService;
     private final LichSuHopDongService lichSuHopDongService;
     private final PhongService phongService;
@@ -58,6 +59,7 @@ public class HopDongService {
             BangGiaRepository bangGiaRepository,
             NguoiORepository nguoiORepository,
             LichSuHopDongRepository lichSuHopDongRepository,
+            QuyetToanRepository quyetToanRepository,
             ThongBaoTienService thongBaoTienService,
             LichSuHopDongService lichSuHopDongService,
             PhongService phongService,
@@ -70,6 +72,7 @@ public class HopDongService {
         this.bangGiaRepository = bangGiaRepository;
         this.nguoiORepository = nguoiORepository;
         this.lichSuHopDongRepository = lichSuHopDongRepository;
+        this.quyetToanRepository = quyetToanRepository;
         this.thongBaoTienService = thongBaoTienService;
         this.lichSuHopDongService = lichSuHopDongService;
         this.phongService = phongService;
@@ -262,7 +265,7 @@ public class HopDongService {
         return hopDongRepository.save(hopDong);
     }
 
-    /** HopDong.baoTraPhong (BR-TL-01). Trả về true nếu trả trước hạn (sẽ áp mucPhatTraTruoc ở quyết toán — GĐ5). */
+    /** HopDong.baoTraPhong (BR-TL-01). Trả về true nếu trả trước hạn (sẽ áp mucPhatTraTruoc ở quyết toán). */
     @Transactional
     public boolean baoTraPhong(String maHopDong, LocalDate ngayTraDuKien, LoaiKetThuc loaiKetThuc) {
         HopDong hopDong = timHoacNem(maHopDong);
@@ -290,6 +293,46 @@ public class HopDongService {
         hopDong.setDaThuHoiChiaKhoa(true);
         hopDong = hopDongRepository.save(hopDong);
         nhatKyThaoTacService.ghiNhan(maTaiKhoanThucHien, "HopDong", maHopDong, "SUA", "Xác nhận đã thu hồi chìa khóa.");
+        return hopDong;
+    }
+
+    /**
+     * HopDong.thanhLy (BR-DM-04): chủ nhà xác nhận thanh lý sau khi QuyetToan đã HOAN_TAT (đã lập
+     * phiếu chi hoặc thông báo thu thêm). daThuHoiChiaKhoa = false chỉ là cảnh báo — chủ nhà xác nhận
+     * qua tham số boQuaCanhBaoChuaThuHoiChiaKhoa thì vẫn thanh lý được.
+     */
+    @Transactional
+    public HopDong thanhLy(String maHopDong, boolean boQuaCanhBaoChuaThuHoiChiaKhoa, String maTaiKhoanThucHien) {
+        HopDong hopDong = timHoacNem(maHopDong);
+        if (hopDong.getTrangThai() != TrangThaiHD.HIEU_LUC) {
+            throw new IllegalArgumentException("Hợp đồng không ở trạng thái hiệu lực.");
+        }
+        QuyetToan quyetToan = quyetToanRepository.timTheoHopDong(maHopDong)
+                .orElseThrow(() -> new IllegalArgumentException("Hợp đồng chưa lập quyết toán."));
+        if (quyetToan.getTrangThai() != TrangThaiQT.HOAN_TAT) {
+            throw new IllegalArgumentException("Quyết toán chưa hoàn tất (chưa lập phiếu chi hoặc thông báo thu thêm).");
+        }
+        if (!hopDong.isDaThuHoiChiaKhoa() && !boQuaCanhBaoChuaThuHoiChiaKhoa) {
+            throw new IllegalArgumentException("Chưa xác nhận thu hồi chìa khóa — xác nhận lại nếu vẫn muốn thanh lý.");
+        }
+
+        hopDong.setTrangThai(TrangThaiHD.DA_THANH_LY);
+        hopDong.setNgayTraThucTe(quyetToan.getNgayTra());
+        hopDong = hopDongRepository.save(hopDong);
+
+        Phong phong = hopDong.getPhong();
+        phong.setTrangThai(TrangThaiPhong.TRONG);
+        phongRepository.save(phong);
+
+        if (hopDong.getMaTaiKhoan() != null) {
+            taiKhoanService.khoa(hopDong.getMaTaiKhoan());
+        }
+        for (NguoiO nguoiO : nguoiORepository.findByHopDong_MaHopDongAndNgayRaIsNull(maHopDong)) {
+            nguoiO.setNgayRa(quyetToan.getNgayTra());
+            nguoiORepository.save(nguoiO);
+        }
+
+        nhatKyThaoTacService.ghiNhan(maTaiKhoanThucHien, "HopDong", maHopDong, "SUA", "Thanh lý hợp đồng — hồ sơ giữ lại.");
         return hopDong;
     }
 
