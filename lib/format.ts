@@ -70,7 +70,28 @@ export const TEN_LOAI_BAN_GIAO: Record<string, string> = {
   TRA_PHONG: "Trả phòng",
 };
 
+export const TEN_LOAI_SU_CO: Record<string, string> = {
+  DIEN: "Điện",
+  NUOC: "Nước",
+  THIET_BI: "Thiết bị",
+  INTERNET: "Internet",
+  KHAC: "Khác",
+};
+
+export const TEN_TRANG_THAI_SU_CO: Record<string, string> = {
+  MOI: "Mới",
+  DANG_XU_LY: "Đang xử lý",
+  DA_XU_LY: "Đã xử lý",
+  TU_CHOI: "Từ chối",
+  MO_LAI: "Mở lại",
+};
+
 export function formatNgay(ngay: string | null | undefined) {
   if (!ngay) return "—";
   return new Intl.DateTimeFormat("vi-VN").format(new Date(ngay));
+}
+
+export function formatNgayGio(ngayGio: string | null | undefined) {
+  if (!ngayGio) return "—";
+  return new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(ngayGio));
 }
