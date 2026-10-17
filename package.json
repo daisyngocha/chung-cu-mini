@@ -5,6 +5,16 @@
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "bcrypt": "^6.0.0",
+    "dotenv": "^18.0.8",
     "prisma": "^5.22.0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   }
 }
