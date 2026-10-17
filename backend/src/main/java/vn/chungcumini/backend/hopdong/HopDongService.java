@@ -11,7 +11,9 @@ import vn.chungcumini.backend.domain.HopDong;
 import vn.chungcumini.backend.domain.HopDongDichVu;
 import vn.chungcumini.backend.domain.KhachThue;
 import vn.chungcumini.backend.domain.LoaiKetThuc;
+import vn.chungcumini.backend.domain.LoaiKhoanTBT;
 import vn.chungcumini.backend.domain.LoaiThayDoi;
+import vn.chungcumini.backend.domain.LoaiThongBao;
 import vn.chungcumini.backend.domain.NguoiO;
 import vn.chungcumini.backend.domain.Phong;
 import vn.chungcumini.backend.domain.TrangThaiHD;
@@ -27,11 +29,12 @@ import vn.chungcumini.backend.repository.NguoiORepository;
 import vn.chungcumini.backend.repository.PhongRepository;
 import vn.chungcumini.backend.taikhoan.TaiKhoanService;
 import vn.chungcumini.backend.taikhoan.TaoTaiKhoanKhachResult;
+import vn.chungcumini.backend.thongbaotien.ThongBaoTienService;
 
 /**
- * lapThongBaoKyHopDong(), thanhLy() và phần kiểm tra "đã thu đủ tiền ký HĐ" của xacNhanNhanPhong()
- * CHƯA cài — cần module ThongBaoTien (GĐ3) và QuyetToan (GĐ5). xacNhanNhanPhong() ở đây luôn bắt
- * buộc lyDo thay vì tự kiểm tra trạng thái thu tiền, cho tới khi ThongBaoTien tồn tại.
+ * thanhLy() và phần kiểm tra "đã thu đủ tiền ký HĐ" của xacNhanNhanPhong() CHƯA cài — cần module
+ * QuyetToan (GĐ5) và PhieuThu (GĐ4, để soDaThu của ThongBaoTien lên được DA_THU_DU). xacNhanNhanPhong()
+ * ở đây luôn bắt buộc lyDo thay vì tự kiểm tra trạng thái thu tiền, cho tới khi PhieuThu tồn tại.
  */
 @Service
 public class HopDongService {
@@ -43,6 +46,7 @@ public class HopDongService {
     private final BangGiaRepository bangGiaRepository;
     private final NguoiORepository nguoiORepository;
     private final LichSuHopDongRepository lichSuHopDongRepository;
+    private final ThongBaoTienService thongBaoTienService;
     private final LichSuHopDongService lichSuHopDongService;
     private final PhongService phongService;
     private final TaiKhoanService taiKhoanService;
@@ -56,6 +60,7 @@ public class HopDongService {
             BangGiaRepository bangGiaRepository,
             NguoiORepository nguoiORepository,
             LichSuHopDongRepository lichSuHopDongRepository,
+            ThongBaoTienService thongBaoTienService,
             LichSuHopDongService lichSuHopDongService,
             PhongService phongService,
             TaiKhoanService taiKhoanService,
@@ -67,6 +72,7 @@ public class HopDongService {
         this.bangGiaRepository = bangGiaRepository;
         this.nguoiORepository = nguoiORepository;
         this.lichSuHopDongRepository = lichSuHopDongRepository;
+        this.thongBaoTienService = thongBaoTienService;
         this.lichSuHopDongService = lichSuHopDongService;
         this.phongService = phongService;
         this.taiKhoanService = taiKhoanService;
@@ -144,7 +150,37 @@ public class HopDongService {
         }
 
         nhatKyThaoTacService.ghiNhan(maTaiKhoanThucHien, "HopDong", hopDong.getMaHopDong(), "TAO", "Lưu hợp đồng giấy lên hệ thống.");
+        lapThongBaoKyHopDong(hopDong, maTaiKhoanThucHien);
         return hopDong;
+    }
+
+    /**
+     * HopDong.lapThongBaoKyHopDong: cọc + tiền phòng từ ngày vào đến hết tháng, phát hành ngay.
+     * Tiền điều kiện: trangThai = CHO_NHAN_PHONG (chỉ gọi nội bộ từ taoMoi()).
+     */
+    private void lapThongBaoKyHopDong(HopDong hopDong, String maTaiKhoanThucHien) {
+        LocalDate cuoiThang = hopDong.getNgayBatDau().withDayOfMonth(hopDong.getNgayBatDau().lengthOfMonth());
+        BigDecimal tienPhongKyDau = tinhTienPhong(hopDong.getMaHopDong(), hopDong.getNgayBatDau(), cuoiThang);
+
+        var tb = thongBaoTienService.taoNhap(
+                hopDong,
+                LoaiThongBao.KY_HOP_DONG,
+                hopDong.getNgayBatDau().toString().substring(0, 7),
+                hopDong.getNgayBatDau(),
+                BigDecimal.ZERO);
+
+        thongBaoTienService.themDong(
+                tb.getMaThongBaoTien(),
+                LoaiKhoanTBT.TIEN_COC,
+                "Tiền cọc",
+                null, null, BigDecimal.ONE, hopDong.getTienCoc(), BigDecimal.ONE, null, null);
+        thongBaoTienService.themDong(
+                tb.getMaThongBaoTien(),
+                LoaiKhoanTBT.TIEN_PHONG,
+                "Tiền phòng từ " + hopDong.getNgayBatDau() + " đến " + cuoiThang,
+                hopDong.getNgayBatDau(), cuoiThang, BigDecimal.ONE, tienPhongKyDau, BigDecimal.ONE, null, null);
+
+        thongBaoTienService.phatHanh(tb.getMaThongBaoTien(), maTaiKhoanThucHien);
     }
 
     /** HopDong.demSoNguoiO: 1 (người đứng tên) + số NguoiO có ngayRa = null. */
@@ -260,8 +296,11 @@ public class HopDongService {
     }
 
     /**
-     * HopDong.xacNhanNhanPhong (BR-CT-05, BR-DM-04). Bỏ qua kiểm tra "có ChiSo đầu kỳ" và "đã thu đủ
-     * tiền ký HĐ" (chưa có module ChiSo/ThongBaoTien) — lyDo luôn bắt buộc để thay thế 2 kiểm tra đó.
+     * HopDong.xacNhanNhanPhong (BR-CT-05, BR-DM-04). Vẫn bỏ qua 2 kiểm tra của tiền điều kiện:
+     * "có ChiSo đầu kỳ" (ChiSo đã có từ GĐ3 nhưng chữ ký phương thức này chưa nhận tham số chỉ số —
+     * để không đổi lại hợp đồng giao diện nhận phòng đã chốt ở GĐ2 trong lúc chỉ làm GĐ3) và "đã thu
+     * đủ tiền ký HĐ" (ThongBaoTien.soDaThu luôn 0 vì PhieuThu — GĐ4 — chưa cài, nên không thể lên
+     * DA_THU_DU). lyDo luôn bắt buộc để thay thế 2 kiểm tra đó.
      */
     @Transactional
     public HopDong xacNhanNhanPhong(String maHopDong, String lyDo, String maNguoiOCapTK, String maTaiKhoanThucHien) {
@@ -271,7 +310,7 @@ public class HopDongService {
         }
         if (lyDo == null || lyDo.isBlank()) {
             throw new IllegalArgumentException(
-                    "Bắt buộc ghi lý do khi xác nhận nhận phòng (chưa có module Thông báo tiền để tự kiểm tra đã thu đủ).");
+                    "Bắt buộc ghi lý do khi xác nhận nhận phòng (chưa có module Phiếu thu để tự kiểm tra đã thu đủ).");
         }
 
         NguoiO nguoiOCapTK = null;

@@ -1,0 +1,230 @@
+package vn.chungcumini.backend.thongbaotien;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.List;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import vn.chungcumini.backend.domain.ChiSo;
+import vn.chungcumini.backend.domain.DongThongBaoTien;
+import vn.chungcumini.backend.domain.HopDong;
+import vn.chungcumini.backend.domain.LoaiKhoanTBT;
+import vn.chungcumini.backend.domain.LoaiThongBao;
+import vn.chungcumini.backend.domain.ThongBaoTien;
+import vn.chungcumini.backend.domain.TrangThaiTBT;
+import vn.chungcumini.backend.nhatky.NhatKyThaoTacService;
+import vn.chungcumini.backend.repository.ChiSoRepository;
+import vn.chungcumini.backend.repository.DongThongBaoTienRepository;
+import vn.chungcumini.backend.repository.ThongBaoTienRepository;
+import vn.chungcumini.backend.toanha.ToaNhaService;
+
+/**
+ * ThongBaoTien.ghiNhanThu/capNhatTrangThaiThu CHƯA cài — cần module PhieuThu (GĐ4); soDaThu luôn 0
+ * cho tới khi đó, nên trangThai không bao giờ tự lên DA_THU_MOT_PHAN/DA_THU_DU qua đường đó. Gửi
+ * ThongBao (TB_TIEN_MOI, KHACH_BAO_TRA...) cũng chưa cài — module Thông báo chưa được xây.
+ */
+@Service
+public class ThongBaoTienService {
+
+    private final ThongBaoTienRepository thongBaoTienRepository;
+    private final DongThongBaoTienRepository dongThongBaoTienRepository;
+    private final ChiSoRepository chiSoRepository;
+    private final ToaNhaService toaNhaService;
+    private final NhatKyThaoTacService nhatKyThaoTacService;
+
+    public ThongBaoTienService(
+            ThongBaoTienRepository thongBaoTienRepository,
+            DongThongBaoTienRepository dongThongBaoTienRepository,
+            ChiSoRepository chiSoRepository,
+            ToaNhaService toaNhaService,
+            NhatKyThaoTacService nhatKyThaoTacService) {
+        this.thongBaoTienRepository = thongBaoTienRepository;
+        this.dongThongBaoTienRepository = dongThongBaoTienRepository;
+        this.chiSoRepository = chiSoRepository;
+        this.toaNhaService = toaNhaService;
+        this.nhatKyThaoTacService = nhatKyThaoTacService;
+    }
+
+    public ThongBaoTien timHoacNem(String maThongBaoTien) {
+        return thongBaoTienRepository.timChiTiet(maThongBaoTien)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông báo tiền \"" + maThongBaoTien + "\"."));
+    }
+
+    public List<DongThongBaoTien> layDongTheoThongBao(String maThongBaoTien) {
+        return dongThongBaoTienRepository.findByThongBaoTien_MaThongBaoTien(maThongBaoTien);
+    }
+
+    /** Tạo bản ghi NHAP — CRUD cơ bản dùng chung cho lapThongBaoKyHopDong (HopDong) và lapThongBaoHangLoat. */
+    @Transactional
+    public ThongBaoTien taoNhap(HopDong hopDong, LoaiThongBao loaiThongBao, String kyThang, LocalDate hanThanhToan, BigDecimal noCu) {
+        String maGoc = "TB" + kyThangThanhMa(kyThang) + hopDong.getPhong().getMaPhong();
+        long soLanLap = thongBaoTienRepository.countByMaThongBaoTienStartingWith(maGoc);
+
+        ThongBaoTien tb = new ThongBaoTien();
+        tb.setMaThongBaoTien(soLanLap == 0 ? maGoc : maGoc + "R" + soLanLap);
+        tb.setHopDong(hopDong);
+        tb.setLoaiThongBao(loaiThongBao);
+        tb.setKyThang(kyThang);
+        tb.setHanThanhToan(hanThanhToan);
+        tb.setNoCu(noCu != null ? noCu : BigDecimal.ZERO);
+        tb.setTongTien(tb.getNoCu());
+        return thongBaoTienRepository.save(tb);
+    }
+
+    private static String kyThangThanhMa(String kyThang) {
+        return kyThang.substring(2, 4) + kyThang.substring(5, 7);
+    }
+
+    /**
+     * ThongBaoTien.themDong. Dòng DIEU_CHINH bắt buộc maThongBaoTienGoc (TB DA_THU_DU/DA_THU_MOT_PHAN
+     * cùng HĐ) và dienGiai nêu lý do (BR-HD-04).
+     */
+    @Transactional
+    public DongThongBaoTien themDong(
+            String maThongBaoTien,
+            LoaiKhoanTBT loaiKhoan,
+            String dienGiai,
+            LocalDate tuNgay,
+            LocalDate denNgay,
+            BigDecimal soLuong,
+            BigDecimal donGia,
+            BigDecimal tyLeNgayO,
+            String maChiSo,
+            String maThongBaoTienGoc) {
+        ThongBaoTien tb = timHoacNem(maThongBaoTien);
+        if (tb.getTrangThai() != TrangThaiTBT.NHAP) {
+            throw new IllegalArgumentException("Chỉ thêm dòng khi thông báo đang ở trạng thái Nháp.");
+        }
+
+        DongThongBaoTien dong = new DongThongBaoTien();
+        dong.setMaDong("DTB" + String.format("%06d", dongThongBaoTienRepository.count() + 1));
+        dong.setThongBaoTien(tb);
+        dong.setLoaiKhoan(loaiKhoan);
+        dong.setDienGiai(dienGiai);
+        dong.setTuNgay(tuNgay);
+        dong.setDenNgay(denNgay);
+        dong.setSoLuong(soLuong != null ? soLuong : BigDecimal.ONE);
+        dong.setDonGia(donGia);
+        dong.setTyLeNgayO(tyLeNgayO != null ? tyLeNgayO : BigDecimal.ONE);
+        dong.setThanhTien(ThanhTienCalculator.tinh(loaiKhoan, dong.getSoLuong(), dong.getDonGia(), dong.getTyLeNgayO()));
+
+        if (maChiSo != null) {
+            ChiSo chiSo = chiSoRepository.findById(maChiSo)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chỉ số \"" + maChiSo + "\"."));
+            dong.setChiSo(chiSo);
+        }
+        if (loaiKhoan == LoaiKhoanTBT.DIEU_CHINH) {
+            if (maThongBaoTienGoc == null || dienGiai == null || dienGiai.isBlank()) {
+                throw new IllegalArgumentException("Dòng điều chỉnh bắt buộc có thông báo gốc và diễn giải lý do.");
+            }
+            ThongBaoTien tbGoc = thongBaoTienRepository.findById(maThongBaoTienGoc)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông báo gốc \"" + maThongBaoTienGoc + "\"."));
+            if (!tbGoc.getHopDong().getMaHopDong().equals(tb.getHopDong().getMaHopDong())
+                    || (tbGoc.getTrangThai() != TrangThaiTBT.DA_THU_DU && tbGoc.getTrangThai() != TrangThaiTBT.DA_THU_MOT_PHAN)) {
+                throw new IllegalArgumentException("Thông báo gốc phải cùng hợp đồng và đã thu đủ/một phần.");
+            }
+            dong.setThongBaoTienGoc(tbGoc);
+        }
+
+        dong = dongThongBaoTienRepository.save(dong);
+        tinhTong(maThongBaoTien);
+        return dong;
+    }
+
+    /** ThongBaoTien.tinhTong: làm tròn ở tổng đến 1.000đ, không làm tròn từng dòng (BR-HD-05). */
+    @Transactional
+    public BigDecimal tinhTong(String maThongBaoTien) {
+        ThongBaoTien tb = timHoacNem(maThongBaoTien);
+        BigDecimal tongDong = dongThongBaoTienRepository.findByThongBaoTien_MaThongBaoTien(maThongBaoTien).stream()
+                .map(DongThongBaoTien::getThanhTien)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal tong = tongDong.add(tb.getNoCu())
+                .divide(BigDecimal.valueOf(1000), 0, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(1000));
+        tb.setTongTien(tong);
+        thongBaoTienRepository.save(tb);
+        return tong;
+    }
+
+    /**
+     * ThongBaoTien.phatHanh. Trả về true nếu cần cảnh báo HĐ hết hạn trong tháng kế tiếp mà chưa gia hạn
+     * (BR-HD-03) — chỉ cảnh báo, không chặn phát hành.
+     */
+    @Transactional
+    public boolean phatHanh(String maThongBaoTien, String maTaiKhoanThucHien) {
+        ThongBaoTien tb = timHoacNem(maThongBaoTien);
+        if (tb.getTrangThai() != TrangThaiTBT.NHAP) {
+            throw new IllegalArgumentException("Chỉ phát hành thông báo đang ở trạng thái Nháp.");
+        }
+        if (tb.getLoaiThongBao() == LoaiThongBao.HANG_THANG) {
+            List<DongThongBaoTien> dong = dongThongBaoTienRepository.findByThongBaoTien_MaThongBaoTien(maThongBaoTien);
+            boolean coDien = dong.stream().anyMatch(d -> d.getLoaiKhoan() == LoaiKhoanTBT.DIEN);
+            boolean coNuoc = !tb.getHopDong().getPhong().isCoCongToNuoc()
+                    || dong.stream().anyMatch(d -> d.getLoaiKhoan() == LoaiKhoanTBT.NUOC);
+            if (!coDien || !coNuoc) {
+                throw new IllegalArgumentException("Thiếu dòng điện/nước, không thể phát hành (BR-HD-02).");
+            }
+        }
+
+        tb.setTrangThai(TrangThaiTBT.DA_PHAT_HANH);
+        tb.setNgayPhatHanh(LocalDate.now());
+        thongBaoTienRepository.save(tb);
+
+        nhatKyThaoTacService.ghiNhan(maTaiKhoanThucHien, "ThongBaoTien", maThongBaoTien, "PHAT_HANH", "Phát hành thông báo tiền.");
+
+        LocalDate hetHan = tb.getHopDong().getNgayHetHan();
+        LocalDate thangKeTiep = LocalDate.now().plusMonths(1);
+        return !hetHan.isAfter(thangKeTiep.withDayOfMonth(thangKeTiep.lengthOfMonth()));
+    }
+
+    /** ThongBaoTien.huy: NHAP thì xóa thẳng, không qua DA_HUY; đã phát hành thì chỉ hủy khi chưa thu (BR-HD-04). */
+    @Transactional
+    public void huy(String maThongBaoTien, String lyDo, String maTaiKhoanThucHien) {
+        ThongBaoTien tb = timHoacNem(maThongBaoTien);
+        if (tb.getTrangThai() == TrangThaiTBT.NHAP) {
+            dongThongBaoTienRepository.findByThongBaoTien_MaThongBaoTien(maThongBaoTien).forEach(dongThongBaoTienRepository::delete);
+            thongBaoTienRepository.delete(tb);
+            return;
+        }
+        if (tb.getTrangThai() != TrangThaiTBT.DA_PHAT_HANH && tb.getTrangThai() != TrangThaiTBT.QUA_HAN) {
+            throw new IllegalArgumentException("Chỉ hủy thông báo đã phát hành hoặc quá hạn.");
+        }
+        if (tb.getSoDaThu().signum() != 0) {
+            throw new IllegalArgumentException("Thông báo đã có khoản thu, không thể hủy — ghi điều chỉnh vào tháng sau.");
+        }
+        if (lyDo == null || lyDo.isBlank()) {
+            throw new IllegalArgumentException("Bắt buộc ghi lý do hủy.");
+        }
+
+        tb.setTrangThai(TrangThaiTBT.DA_HUY);
+        tb.setLyDoHuy(lyDo);
+        thongBaoTienRepository.save(tb);
+        nhatKyThaoTacService.ghiNhan(maTaiKhoanThucHien, "ThongBaoTien", maThongBaoTien, "HUY", lyDo);
+    }
+
+    /** ThongBaoTien.taoMaVietQR: QR cho số tiền còn phải trả. */
+    public String taoMaVietQR(String maThongBaoTien) {
+        ThongBaoTien tb = timHoacNem(maThongBaoTien);
+        if (tb.getTrangThai() == TrangThaiTBT.NHAP || tb.getTrangThai() == TrangThaiTBT.DA_HUY
+                || tb.getTrangThai() == TrangThaiTBT.DA_THU_DU) {
+            throw new IllegalArgumentException("Thông báo chưa phát hành, đã hủy hoặc đã thu đủ — không cần mã QR.");
+        }
+        BigDecimal conPhaiTra = tb.getTongTien().subtract(tb.getSoDaThu());
+        return toaNhaService.taoMaVietQR(conPhaiTra, maThongBaoTien);
+    }
+
+    /** ThongBaoTien.danhDauQuaHan (Bộ hẹn giờ — gọi tay ở đây, tự động hóa thuộc GĐ8). */
+    @Transactional
+    public void danhDauQuaHan(String maThongBaoTien, LocalDate ngay) {
+        ThongBaoTien tb = timHoacNem(maThongBaoTien);
+        if (!ngay.isAfter(tb.getHanThanhToan())) {
+            throw new IllegalArgumentException("Chưa quá hạn thanh toán.");
+        }
+        if (tb.getTrangThai() != TrangThaiTBT.DA_PHAT_HANH && tb.getTrangThai() != TrangThaiTBT.DA_THU_MOT_PHAN) {
+            throw new IllegalArgumentException("Chỉ đánh dấu quá hạn khi đã phát hành hoặc đã thu một phần.");
+        }
+        tb.setTrangThai(TrangThaiTBT.QUA_HAN);
+        thongBaoTienRepository.save(tb);
+    }
+}
