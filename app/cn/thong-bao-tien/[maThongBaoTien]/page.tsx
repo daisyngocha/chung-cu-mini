@@ -65,6 +65,12 @@ export default async function ThongBaoTienDetailPage({
         <h1 className="mt-1 text-xl font-semibold text-zinc-900">
           Thông báo {tb.maThongBaoTien} — phòng {tb.maPhong}
         </h1>
+        <Link
+          href={`/cn/phieu-thu?maThongBaoTien=${tb.maThongBaoTien}`}
+          className="text-sm text-zinc-500 hover:underline"
+        >
+          Xem phiếu thu của thông báo này →
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-x-6 gap-y-2 rounded-lg border border-zinc-200 bg-white p-4 text-sm sm:grid-cols-3">
