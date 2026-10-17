@@ -43,9 +43,12 @@ public class TaiSanService {
 
     /** TaiSan.capNhatTinhTrang: cập nhật tình trạng hiện tại của tài sản (thường gọi sau bàn giao nhận/trả phòng). */
     @Transactional
-    public TaiSanResponse capNhatTinhTrang(String maTaiSan, String tinhTrangMoi) {
+    public TaiSanResponse capNhatTinhTrang(String maPhong, String maTaiSan, String tinhTrangMoi) {
         TaiSan taiSan = taiSanRepository.findById(maTaiSan)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài sản \"" + maTaiSan + "\"."));
+        if (!taiSan.getPhong().getMaPhong().equals(maPhong)) {
+            throw new IllegalArgumentException("Tài sản \"" + maTaiSan + "\" không thuộc phòng \"" + maPhong + "\".");
+        }
         taiSan.setTinhTrang(tinhTrangMoi);
         return TaiSanResponse.tu(taiSanRepository.save(taiSan));
     }

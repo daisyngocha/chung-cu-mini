@@ -29,6 +29,6 @@ public class TaiSanController {
     @PatchMapping("/{maTaiSan}/tinh-trang")
     public TaiSanResponse capNhatTinhTrang(
             @PathVariable String maPhong, @PathVariable String maTaiSan, @Valid @RequestBody CapNhatTinhTrangRequest request) {
-        return taiSanService.capNhatTinhTrang(maTaiSan, request.tinhTrang());
+        return taiSanService.capNhatTinhTrang(maPhong, maTaiSan, request.tinhTrang());
     }
 }
