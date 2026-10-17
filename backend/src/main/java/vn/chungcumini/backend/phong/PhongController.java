@@ -3,6 +3,7 @@ package vn.chungcumini.backend.phong;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,8 +27,18 @@ public class PhongController {
         return phongService.taoPhong(request);
     }
 
+    @PatchMapping("/{maPhong}/gia-niem-yet")
+    public PhongResponse capNhatGiaNiemYet(@PathVariable String maPhong, @Valid @RequestBody CapNhatGiaRequest request) {
+        return phongService.capNhatGiaNiemYet(maPhong, request.giaNiemYet());
+    }
+
     @PatchMapping("/{maPhong}/trang-thai")
-    public PhongResponse chuyenTrangThai(@PathVariable String maPhong) {
-        return phongService.chuyenTrangThai(maPhong);
+    public PhongResponse chuyenTrangThai(@PathVariable String maPhong, @Valid @RequestBody ChuyenTrangThaiRequest request) {
+        return phongService.chuyenTrangThai(maPhong, request.trangThai());
+    }
+
+    @DeleteMapping("/{maPhong}")
+    public void xoa(@PathVariable String maPhong, @AuthenticationPrincipal String maTaiKhoan) {
+        phongService.xoa(maPhong, maTaiKhoan);
     }
 }
