@@ -22,6 +22,11 @@ const NAV = [
   { href: "/cn/thong-bao", label: "Thông báo" },
   { href: "/cn/thong-bao-chung", label: "Gửi thông báo chung" },
   { href: "/cn/bao-cao", label: "Báo cáo" },
+  { href: "/cn/cai-dat/toa-nha", label: "Thông tin tòa" },
+  { href: "/cn/cai-dat/tai-khoan-nhan-tien", label: "Tài khoản nhận tiền" },
+  { href: "/cn/cai-dat/tai-khoan-khach", label: "Tài khoản khách" },
+  { href: "/cn/cai-dat/khoi-tao", label: "Nhập dữ liệu đầu kỳ" },
+  { href: "/cn/cai-dat/nhat-ky", label: "Nhật ký thao tác" },
 ];
 
 export default async function ChuNhaLayout({

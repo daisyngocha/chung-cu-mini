@@ -19,6 +19,10 @@ public interface HopDongRepository extends JpaRepository<HopDong, String> {
     @Query("SELECT h FROM HopDong h JOIN FETCH h.phong WHERE h.khachThue.maKhach = :maKhach ORDER BY h.ngayBatDau DESC")
     List<HopDong> findByKhachThue_MaKhachOrderByNgayBatDauDesc(@Param("maKhach") String maKhach);
 
+    /** CN-09.03: hợp đồng gắn với một tài khoản khách, bất kể trạng thái — để hiển thị phòng/khách của tài khoản đó. */
+    @Query("SELECT h FROM HopDong h JOIN FETCH h.phong JOIN FETCH h.khachThue WHERE h.maTaiKhoan = :maTaiKhoan")
+    Optional<HopDong> findByMaTaiKhoan(@Param("maTaiKhoan") String maTaiKhoan);
+
     List<HopDong> findByNgayNhanPhongBetween(java.time.LocalDate tuNgay, java.time.LocalDate denNgay);
 
     /** Nạp sẵn phong + khachThue — tránh LazyInitializationException khi map sang DTO ngoài transaction. */
