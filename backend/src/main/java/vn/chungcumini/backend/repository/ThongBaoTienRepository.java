@@ -25,4 +25,14 @@ public interface ThongBaoTienRepository extends JpaRepository<ThongBaoTien, Stri
     List<ThongBaoTien> timTruocKy(@Param("maHopDong") String maHopDong, @Param("kyThang") String kyThang);
 
     long countByMaThongBaoTienStartingWith(String tienTo);
+
+    /** BoHenGio.chayHangNgay / DichVuViecCanLam.layDanhSach: thông báo đang ở các trạng thái cho trước. */
+    @Query("SELECT t FROM ThongBaoTien t JOIN FETCH t.hopDong h JOIN FETCH h.phong WHERE t.trangThai IN :trangThai")
+    List<ThongBaoTien> findByTrangThaiIn(@Param("trangThai") List<TrangThaiTBT> trangThai);
+
+    /** DichVuBaoCao.doanhThu/tyLeThu: thông báo đã phát hành (không NHAP, không DA_HUY) trong khoảng ngày phát hành. */
+    @Query(
+            "SELECT t FROM ThongBaoTien t JOIN FETCH t.hopDong h JOIN FETCH h.phong WHERE t.trangThai NOT IN ('NHAP', 'DA_HUY') "
+                    + "AND t.ngayPhatHanh BETWEEN :tuNgay AND :denNgay")
+    List<ThongBaoTien> timDaPhatHanhTrongKhoang(@Param("tuNgay") java.time.LocalDate tuNgay, @Param("denNgay") java.time.LocalDate denNgay);
 }
