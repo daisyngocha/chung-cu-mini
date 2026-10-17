@@ -20,6 +20,7 @@ export async function taoHopDong(
   const ngayHetHan = String(formData.get("ngayHetHan") ?? "").trim();
   const giaThue = String(formData.get("giaThue") ?? "").trim();
   const tienCoc = String(formData.get("tienCoc") ?? "").trim();
+  const dsDichVu = formData.getAll("dsDichVu").map((maKhoan) => ({ maKhoan: String(maKhoan), soLuong: 1 }));
 
   if (!maPhong || !maKhach || !ngayBatDau || !ngayHetHan) {
     return { error: "Vui lòng chọn phòng, nhập mã khách và thời hạn hợp đồng." };
@@ -37,6 +38,7 @@ export async function taoHopDong(
         ngayHetHan,
         giaThue: giaThue ? Number(giaThue) : null,
         tienCoc: tienCoc ? Number(tienCoc) : null,
+        dsDichVu,
       },
     });
     maHopDong = hopDong.maHopDong;

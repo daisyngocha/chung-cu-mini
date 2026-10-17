@@ -19,6 +19,17 @@ type PhongApi = {
   trangThai: "TRONG" | "DANG_THUE" | "NGUNG_KHAI_THAC";
 };
 
+type BangGiaApi = {
+  maKhoan: string;
+  tenKhoan: string;
+  loaiKhoan: string;
+  donGia: number;
+  donViTinh: string;
+  ngayHetHieuLuc: string | null;
+};
+
+const LOAI_DICH_VU_HOP_DONG = ["DICH_VU_THEO_PHONG", "DICH_VU_THEO_XE"];
+
 const MAU_TRANG_THAI: Record<HopDongSummaryApi["trangThai"], string> = {
   CHO_NHAN_PHONG: "bg-amber-100 text-amber-700",
   HIEU_LUC: "bg-blue-100 text-blue-700",
@@ -27,17 +38,21 @@ const MAU_TRANG_THAI: Record<HopDongSummaryApi["trangThai"], string> = {
 
 export default async function HopDongPage() {
   const token = await getSessionToken();
-  const [danhSachHopDong, danhSachPhong] = await Promise.all([
+  const [danhSachHopDong, danhSachPhong, danhSachBangGia] = await Promise.all([
     goiBackend<HopDongSummaryApi[]>("/api/hop-dong", { token }),
     goiBackend<PhongApi[]>("/api/phong", { token }),
+    goiBackend<BangGiaApi[]>("/api/bang-gia", { token }),
   ]);
   const dsPhongTrong = danhSachPhong.filter((p) => p.trangThai === "TRONG");
+  const dsDichVuKhaDung = danhSachBangGia.filter(
+    (bg) => LOAI_DICH_VU_HOP_DONG.includes(bg.loaiKhoan) && !bg.ngayHetHieuLuc,
+  );
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-semibold text-zinc-900">Khách thuê & hợp đồng</h1>
 
-      <CreateHopDongForm dsPhongTrong={dsPhongTrong} />
+      <CreateHopDongForm dsPhongTrong={dsPhongTrong} dsDichVuKhaDung={dsDichVuKhaDung} />
 
       <div className="overflow-hidden rounded-lg border border-zinc-200 bg-white">
         <table className="w-full text-sm">

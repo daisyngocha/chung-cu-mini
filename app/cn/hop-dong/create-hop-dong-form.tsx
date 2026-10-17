@@ -4,10 +4,17 @@ import { useActionState } from "react";
 import { taoHopDong, type HopDongFormState } from "./actions";
 
 type PhongTrong = { maPhong: string; giaNiemYet: number };
+type DichVuKhaDung = { maKhoan: string; tenKhoan: string; donGia: number; donViTinh: string };
 
 const initialState: HopDongFormState = {};
 
-export function CreateHopDongForm({ dsPhongTrong }: { dsPhongTrong: PhongTrong[] }) {
+export function CreateHopDongForm({
+  dsPhongTrong,
+  dsDichVuKhaDung,
+}: {
+  dsPhongTrong: PhongTrong[];
+  dsDichVuKhaDung: DichVuKhaDung[];
+}) {
   const [state, formAction, isPending] = useActionState(taoHopDong, initialState);
 
   return (
@@ -85,6 +92,23 @@ export function CreateHopDongForm({ dsPhongTrong }: { dsPhongTrong: PhongTrong[]
           {isPending ? "Đang tạo..." : "Tạo hợp đồng"}
         </button>
       </div>
+
+      {dsDichVuKhaDung.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-medium text-zinc-600">
+            Dịch vụ đăng ký kèm hợp đồng (tùy chọn)
+          </label>
+          <div className="flex flex-wrap gap-4">
+            {dsDichVuKhaDung.map((dv) => (
+              <label key={dv.maKhoan} className="flex items-center gap-1.5 text-sm text-zinc-700">
+                <input type="checkbox" name="dsDichVu" value={dv.maKhoan} className="h-4 w-4" />
+                {dv.tenKhoan} ({dv.donGia.toLocaleString("vi-VN")} {dv.donViTinh})
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       <p className="text-xs text-zinc-500">
         Chưa có mã khách? Thêm khách thuê ở trang{" "}
         <a href="/cn/khach-thue" className="underline">
