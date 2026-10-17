@@ -40,8 +40,13 @@ async function main() {
   const taiKhoan = await prisma.taiKhoan.upsert({
     where: { tenDangNhap: 'admin-NHa' },
     update: {
-      // Chạy lại seed sẽ cập nhật hash theo mật khẩu mẫu trong .env.
+      // Chạy lại seed sẽ cập nhật hash theo mật khẩu mẫu trong .env,
+      // đồng thời mở khóa và buộc đổi lại mật khẩu ở lần đăng nhập tới.
       matKhauHash,
+      phaiDoiMatKhau: true,
+      trangThai: 'HOAT_DONG',
+      soLanSai: 0,
+      khoaDenLuc: null,
     },
     create: {
       maTaiKhoan: 'TK_ADMIN_01',
