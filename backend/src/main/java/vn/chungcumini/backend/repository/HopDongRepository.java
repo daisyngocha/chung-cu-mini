@@ -31,12 +31,12 @@ public interface HopDongRepository extends JpaRepository<HopDong, String> {
     @Query("SELECT h FROM HopDong h JOIN FETCH h.phong WHERE h.trangThai = :trangThai")
     List<HopDong> findByTrangThaiWithPhong(@Param("trangThai") TrangThaiHD trangThai);
 
+    /** Mục 11: mọi truy vấn của khách lọc theo phòng đang thuê — HĐ hiệu lực gắn với tài khoản đang đăng nhập. */
+    @Query("SELECT h FROM HopDong h JOIN FETCH h.phong JOIN FETCH h.khachThue WHERE h.maTaiKhoan = :maTaiKhoan AND h.trangThai = 'HIEU_LUC'")
+    Optional<HopDong> findHieuLucByMaTaiKhoan(@Param("maTaiKhoan") String maTaiKhoan);
+
     default Optional<HopDong> timHopDongHieuLucCua(String maPhong) {
         List<HopDong> ds = findByMaPhongAndTrangThaiIn(maPhong, List.of(TrangThaiHD.HIEU_LUC, TrangThaiHD.CHO_NHAN_PHONG));
         return ds.isEmpty() ? Optional.empty() : Optional.of(ds.get(0));
     }
-
-    /** Mục 11: mọi truy vấn của khách lọc theo phòng đang thuê — HĐ hiệu lực gắn với tài khoản đang đăng nhập. */
-    @Query("SELECT h FROM HopDong h JOIN FETCH h.phong JOIN FETCH h.khachThue WHERE h.maTaiKhoan = :maTaiKhoan AND h.trangThai = 'HIEU_LUC'")
-    Optional<HopDong> findHieuLucByMaTaiKhoan(@Param("maTaiKhoan") String maTaiKhoan);
 }

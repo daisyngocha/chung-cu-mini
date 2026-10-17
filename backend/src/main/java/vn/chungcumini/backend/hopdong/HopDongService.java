@@ -16,8 +16,10 @@ import vn.chungcumini.backend.domain.LoaiThayDoi;
 import vn.chungcumini.backend.domain.LoaiThongBao;
 import vn.chungcumini.backend.domain.NguoiO;
 import vn.chungcumini.backend.domain.Phong;
+import vn.chungcumini.backend.domain.QuyetToan;
 import vn.chungcumini.backend.domain.TrangThaiHD;
 import vn.chungcumini.backend.domain.TrangThaiPhong;
+import vn.chungcumini.backend.domain.TrangThaiQT;
 import vn.chungcumini.backend.nhatky.NhatKyThaoTacService;
 import vn.chungcumini.backend.phong.PhongService;
 import vn.chungcumini.backend.repository.BangGiaRepository;
@@ -27,15 +29,11 @@ import vn.chungcumini.backend.repository.KhachThueRepository;
 import vn.chungcumini.backend.repository.LichSuHopDongRepository;
 import vn.chungcumini.backend.repository.NguoiORepository;
 import vn.chungcumini.backend.repository.PhongRepository;
+import vn.chungcumini.backend.repository.QuyetToanRepository;
 import vn.chungcumini.backend.taikhoan.TaiKhoanService;
 import vn.chungcumini.backend.taikhoan.TaoTaiKhoanKhachResult;
 import vn.chungcumini.backend.thongbaotien.ThongBaoTienService;
 
-/**
- * thanhLy() và phần kiểm tra "đã thu đủ tiền ký HĐ" của xacNhanNhanPhong() CHƯA cài — cần module
- * QuyetToan (GĐ5) và PhieuThu (GĐ4, để soDaThu của ThongBaoTien lên được DA_THU_DU). xacNhanNhanPhong()
- * ở đây luôn bắt buộc lyDo thay vì tự kiểm tra trạng thái thu tiền, cho tới khi PhieuThu tồn tại.
- */
 @Service
 public class HopDongService {
 
@@ -46,6 +44,7 @@ public class HopDongService {
     private final BangGiaRepository bangGiaRepository;
     private final NguoiORepository nguoiORepository;
     private final LichSuHopDongRepository lichSuHopDongRepository;
+    private final QuyetToanRepository quyetToanRepository;
     private final ThongBaoTienService thongBaoTienService;
     private final LichSuHopDongService lichSuHopDongService;
     private final PhongService phongService;
@@ -60,6 +59,7 @@ public class HopDongService {
             BangGiaRepository bangGiaRepository,
             NguoiORepository nguoiORepository,
             LichSuHopDongRepository lichSuHopDongRepository,
+            QuyetToanRepository quyetToanRepository,
             ThongBaoTienService thongBaoTienService,
             LichSuHopDongService lichSuHopDongService,
             PhongService phongService,
@@ -72,6 +72,7 @@ public class HopDongService {
         this.bangGiaRepository = bangGiaRepository;
         this.nguoiORepository = nguoiORepository;
         this.lichSuHopDongRepository = lichSuHopDongRepository;
+        this.quyetToanRepository = quyetToanRepository;
         this.thongBaoTienService = thongBaoTienService;
         this.lichSuHopDongService = lichSuHopDongService;
         this.phongService = phongService;
@@ -270,7 +271,7 @@ public class HopDongService {
         return hopDongRepository.save(hopDong);
     }
 
-    /** HopDong.baoTraPhong (BR-TL-01). Trả về true nếu trả trước hạn (sẽ áp mucPhatTraTruoc ở quyết toán — GĐ5). */
+    /** HopDong.baoTraPhong (BR-TL-01). Trả về true nếu trả trước hạn (sẽ áp mucPhatTraTruoc ở quyết toán). */
     @Transactional
     public boolean baoTraPhong(String maHopDong, LocalDate ngayTraDuKien, LoaiKetThuc loaiKetThuc) {
         HopDong hopDong = timHoacNem(maHopDong);
@@ -302,11 +303,50 @@ public class HopDongService {
     }
 
     /**
-     * HopDong.xacNhanNhanPhong (BR-CT-05, BR-DM-04). Vẫn bỏ qua 2 kiểm tra của tiền điều kiện:
-     * "có ChiSo đầu kỳ" (ChiSo đã có từ GĐ3 nhưng chữ ký phương thức này chưa nhận tham số chỉ số —
-     * để không đổi lại hợp đồng giao diện nhận phòng đã chốt ở GĐ2 trong lúc chỉ làm GĐ3) và "đã thu
-     * đủ tiền ký HĐ" (ThongBaoTien.soDaThu luôn 0 vì PhieuThu — GĐ4 — chưa cài, nên không thể lên
-     * DA_THU_DU). lyDo luôn bắt buộc để thay thế 2 kiểm tra đó.
+     * HopDong.thanhLy (BR-DM-04): chủ nhà xác nhận thanh lý sau khi QuyetToan đã HOAN_TAT (đã lập
+     * phiếu chi hoặc thông báo thu thêm). daThuHoiChiaKhoa = false chỉ là cảnh báo — chủ nhà xác nhận
+     * qua tham số boQuaCanhBaoChuaThuHoiChiaKhoa thì vẫn thanh lý được.
+     */
+    @Transactional
+    public HopDong thanhLy(String maHopDong, boolean boQuaCanhBaoChuaThuHoiChiaKhoa, String maTaiKhoanThucHien) {
+        HopDong hopDong = timHoacNem(maHopDong);
+        if (hopDong.getTrangThai() != TrangThaiHD.HIEU_LUC) {
+            throw new IllegalArgumentException("Hợp đồng không ở trạng thái hiệu lực.");
+        }
+        QuyetToan quyetToan = quyetToanRepository.timTheoHopDong(maHopDong)
+                .orElseThrow(() -> new IllegalArgumentException("Hợp đồng chưa lập quyết toán."));
+        if (quyetToan.getTrangThai() != TrangThaiQT.HOAN_TAT) {
+            throw new IllegalArgumentException("Quyết toán chưa hoàn tất (chưa lập phiếu chi hoặc thông báo thu thêm).");
+        }
+        if (!hopDong.isDaThuHoiChiaKhoa() && !boQuaCanhBaoChuaThuHoiChiaKhoa) {
+            throw new IllegalArgumentException("Chưa xác nhận thu hồi chìa khóa — xác nhận lại nếu vẫn muốn thanh lý.");
+        }
+
+        hopDong.setTrangThai(TrangThaiHD.DA_THANH_LY);
+        hopDong.setNgayTraThucTe(quyetToan.getNgayTra());
+        hopDong = hopDongRepository.save(hopDong);
+
+        Phong phong = hopDong.getPhong();
+        phong.setTrangThai(TrangThaiPhong.TRONG);
+        phongRepository.save(phong);
+
+        if (hopDong.getMaTaiKhoan() != null) {
+            taiKhoanService.khoa(hopDong.getMaTaiKhoan());
+        }
+        for (NguoiO nguoiO : nguoiORepository.findByHopDong_MaHopDongAndNgayRaIsNull(maHopDong)) {
+            nguoiO.setNgayRa(quyetToan.getNgayTra());
+            nguoiORepository.save(nguoiO);
+        }
+
+        nhatKyThaoTacService.ghiNhan(maTaiKhoanThucHien, "HopDong", maHopDong, "SUA", "Thanh lý hợp đồng — hồ sơ giữ lại.");
+        return hopDong;
+    }
+
+    /**
+     * HopDong.xacNhanNhanPhong (BR-CT-05, BR-DM-04). Vẫn bỏ qua kiểm tra tiền điều kiện "có ChiSo đầu
+     * kỳ" (ChiSo đã có từ GĐ3 nhưng chữ ký phương thức này chưa nhận tham số chỉ số — để không đổi lại
+     * hợp đồng giao diện nhận phòng đã chốt ở GĐ2). BR-CT-05: chặn khi thông báo ký HĐ chưa thu đủ,
+     * trừ khi chủ nhà ghi lyDo.
      */
     @Transactional
     public HopDong xacNhanNhanPhong(String maHopDong, String lyDo, String maNguoiOCapTK, String maTaiKhoanThucHien) {
@@ -314,9 +354,10 @@ public class HopDongService {
         if (hopDong.getTrangThai() != TrangThaiHD.CHO_NHAN_PHONG) {
             throw new IllegalArgumentException("Hợp đồng không ở trạng thái chờ nhận phòng.");
         }
-        if (lyDo == null || lyDo.isBlank()) {
+        boolean daThuDu = thongBaoTienService.kyHopDongDaThuDu(maHopDong);
+        if (!daThuDu && (lyDo == null || lyDo.isBlank())) {
             throw new IllegalArgumentException(
-                    "Bắt buộc ghi lý do khi xác nhận nhận phòng (chưa có module Phiếu thu để tự kiểm tra đã thu đủ).");
+                    "Thông báo tiền ký hợp đồng chưa thu đủ — bắt buộc ghi lý do để xác nhận nhận phòng (BR-CT-05).");
         }
 
         NguoiO nguoiOCapTK = null;
