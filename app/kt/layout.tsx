@@ -10,6 +10,8 @@ const NAV = [
   { href: "/kt/phieu-thu", label: "Phiếu thu" },
   { href: "/kt/hop-dong", label: "Hồ sơ & hợp đồng" },
   { href: "/kt/tra-phong", label: "Trả phòng & quyết toán" },
+  { href: "/kt/su-co", label: "Sự cố" },
+  { href: "/kt/thong-bao", label: "Thông báo" },
 ];
 
 export default async function KhachThueLayout({
@@ -19,7 +21,10 @@ export default async function KhachThueLayout({
 }) {
   await requireSession("KHACH_THUE");
   const token = await getSessionToken();
-  const toaNha = await goiBackend<{ tenToa: string }>("/api/toa-nha/mac-dinh", { token });
+  const [toaNha, demChuaDoc] = await Promise.all([
+    goiBackend<{ tenToa: string }>("/api/toa-nha/mac-dinh", { token }),
+    goiBackend<{ soLuong: number }>("/api/thong-bao/chua-doc", { token }),
+  ]);
 
   return (
     <div className="flex min-h-full">
@@ -34,9 +39,14 @@ export default async function KhachThueLayout({
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-md px-2 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+              className="flex items-center justify-between rounded-md px-2 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
               {item.label}
+              {item.href === "/kt/thong-bao" && demChuaDoc.soLuong > 0 && (
+                <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-semibold text-white">
+                  {demChuaDoc.soLuong}
+                </span>
+              )}
             </Link>
           ))}
         </nav>
