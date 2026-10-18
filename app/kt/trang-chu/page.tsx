@@ -72,10 +72,10 @@ export default async function TrangChuKhachThuePage() {
           {chuaThanhToan.length > 0 && <p className="text-sm text-zinc-600">Còn thiếu: {formatTien(tongConNo)}</p>}
         </Link>
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-4">
+        <Link href="/kt/su-co" className="rounded-lg border border-zinc-200 bg-white p-4 hover:bg-zinc-50">
           <h3 className="mb-1 text-sm font-semibold text-zinc-900">Sự cố đang mở</h3>
           <p className="text-2xl font-semibold text-zinc-900">{suCoDangMo.length}</p>
-        </div>
+        </Link>
       </div>
 
       <div className="rounded-lg border border-zinc-200 bg-white p-4">
