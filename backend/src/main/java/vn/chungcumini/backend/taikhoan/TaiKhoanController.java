@@ -1,6 +1,7 @@
 package vn.chungcumini.backend.taikhoan;
 
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,11 @@ public class TaiKhoanController {
         this.taiKhoanService = taiKhoanService;
         this.hopDongService = hopDongService;
         this.nguoiORepository = nguoiORepository;
+    }
+
+    @GetMapping("/api/tai-khoan-khach")
+    public List<TaiKhoanKhachResponse> danhSachKhach() {
+        return taiKhoanService.layDanhSachKhach();
     }
 
     @PostMapping("/api/hop-dong/{maHopDong}/tai-khoan-khach")

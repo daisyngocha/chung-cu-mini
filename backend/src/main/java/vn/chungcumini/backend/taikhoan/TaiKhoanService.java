@@ -1,5 +1,6 @@
 package vn.chungcumini.backend.taikhoan;
 
+import java.util.List;
 import java.util.Optional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,15 @@ public class TaiKhoanService {
         this.hopDongRepository = hopDongRepository;
         this.passwordEncoder = passwordEncoder;
         this.nhatKyThaoTacService = nhatKyThaoTacService;
+    }
+
+    /** CN-09.03: danh sách tài khoản khách kèm phòng/khách hiện gắn (nếu còn hợp đồng tham chiếu). */
+    public List<TaiKhoanKhachResponse> layDanhSachKhach() {
+        return taiKhoanRepository.findByVaiTroOrderByNgayTaoDesc(VaiTro.KHACH_THUE).stream()
+                .map(t -> hopDongRepository.findByMaTaiKhoan(t.getMaTaiKhoan())
+                        .map(h -> TaiKhoanKhachResponse.tu(t, h.getMaHopDong(), h.getPhong().getMaPhong(), h.getKhachThue().getHoTen()))
+                        .orElseGet(() -> TaiKhoanKhachResponse.tu(t, null, null, null)))
+                .toList();
     }
 
     /**
